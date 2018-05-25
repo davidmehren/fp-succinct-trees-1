@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use id_tree::Tree;
-use bit_vec::BitVec;
+use bv::{BitVec, Bits, BitsMut};
 
 pub trait SuccinctTree<T>: Debug {
     fn is_leaf(&self, index: u64) -> bool;
@@ -11,11 +11,11 @@ pub trait SuccinctTree<T>: Debug {
 
     ///  Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültige Exzesses und
     /// der Anzahl öffnender und schließender Klammern
-    fn is_valid(bitvec: BitVec) -> bool {
+    fn is_valid(bitvec: &BitVec) -> bool {
         let mut excess : u64 = 0;
         for i  in 0..bitvec.len() {
-            let x = bitvec.get(i).unwrap();
-            if x {
+            let x = bitvec.get_bit(i);
+            if x == true {
                 excess = excess + 1;
             } else {
                 excess = excess - 1;
