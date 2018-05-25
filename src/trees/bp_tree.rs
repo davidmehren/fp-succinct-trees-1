@@ -1,5 +1,5 @@
 use bio::data_structures::rank_select::RankSelect;
-use bit_vec::BitVec;
+use bv::{BitVec, BitsMut};
 use common::succinct_tree::SuccinctTree;
 use id_tree::Tree;
 use std::fmt::Debug;
@@ -43,12 +43,12 @@ impl Debug for BPTree {
 
 impl BPTree {
     pub fn stub_create() -> BPTree {
-        let mut bits = BitVec::from_elem(64, false);
-        bits.set(5, true);
-        bits.set(32, true);
+        let mut bits: BitVec<u8> = BitVec::new_fill(false, 64);
+        bits.set_bit(5, true);
+        bits.set_bit(32, true);
         BPTree {
-            bits: BitVec::from_elem(10, false),
-            rankselect: RankSelect::new(&bits, 1),
+            bits: BitVec::new_fill(false, 10),
+            rankselect: RankSelect::new(bits, 1),
         }
     }
 }
