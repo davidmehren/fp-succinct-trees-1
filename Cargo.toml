@@ -1,0 +1,6 @@
+[package]
+name = "fp-succinct-trees-1"
+version = "0.1.0"
+authors = ["David Mehren <dmehren1@gmail.com>"]
+
+[dependencies]
