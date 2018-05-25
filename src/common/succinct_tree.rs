@@ -9,7 +9,8 @@ pub trait SuccinctTree<T>: Debug {
     fn next_sibling(&self, index: u64) -> Option<u64>;
     fn from_id_tree(tree: Tree<i32>) -> T;
 
-    ///  Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültige Exzesses und der Anzahl öffnender und schließender Klammern
+    ///  Prüft ob ein Bitvector ein gültiger SuccinctTree ist,
+    /// anhand des gültige Exzesses und der Anzahl öffnender und schließender Klammern
     fn is_valid(bitvec: BitVec) -> bool {
         let mut excess : u64 = 0;
         for i  in 0..bitvec.len() {
@@ -20,11 +21,11 @@ pub trait SuccinctTree<T>: Debug {
                 excess = excess - 1;
             }
             if excess == 0 && i < bitvec.len() {
-                false
+                return false
             }
         }
         if excess != 0 {
-            false
+            return false
         }
         true
     }
