@@ -21,11 +21,11 @@ pub trait SuccinctTree<T>: Debug {
                 excess = excess - 1;
             }
             if excess == 0 && i < bitvec.len() {
-                false
+                return false
             }
         }
         if excess != 0 {
-            false
+            return false
         }
         true
     }
