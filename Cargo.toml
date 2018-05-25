@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["David Mehren <dmehren1@gmail.com>"]
 
 [dependencies]
+bit-vec = "0.4.4"
+bio = "0.18.0"
+id_tree = "1.3.0"

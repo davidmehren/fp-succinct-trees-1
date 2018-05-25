@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+extern crate id_tree;
+extern crate bit_vec;
+extern crate bio;
+
+pub mod common;
+pub mod trees;
