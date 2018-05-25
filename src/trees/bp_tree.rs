@@ -4,7 +4,8 @@ use common::succinct_tree::SuccinctTree;
 use id_tree::Tree;
 use std::fmt::Debug;
 use std::fmt::Formatter;
-use std::fmt::Error;
+use failure::Error;
+use std::fmt;
 
 pub struct BPTree {
     bits: BitVec<u32>,
@@ -34,14 +35,14 @@ impl SuccinctTree<BPTree> for BPTree {
 }
 
 impl Debug for BPTree {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         unimplemented!()
     }
 }
 
 
 impl BPTree {
-    pub fn create() -> BPTree {
+    pub fn stub_create() -> BPTree {
         let mut bits = BitVec::from_elem(64, false);
         bits.set(5, true);
         bits.set(32, true);
