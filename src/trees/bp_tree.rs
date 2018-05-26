@@ -53,4 +53,37 @@ impl BPTree {
             rminmax: "foo".to_string(),
         }
     }
+
+    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<BPTree, Error> {
+        if !Self::is_valid(&bitvec as &BitVec<u8>) {
+            return Err(format_err!("Bit vector not valid."));
+        }
+        let superblock_size = ((bitvec.len() as f32).log2().powi(2) / 32.0).ceil();
+        Ok(BPTree {
+            rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
+            bits: bitvec,
+            rminmax: "foo".to_string(),
+        })
+    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_from_bitvec() {
+        let mut bitvec = BitVec::new_fill(false, 2);
+        bitvec.set_bit(0, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.bits, bitvec, "BPTree seems to somehow change the bitvector it was created with.");
+    }
+
+    #[test]
+    #[should_panic(expected = "ErrorMessage { msg: \"Bit vector not valid.\" }")]
+    fn new_from_bitvec_invalid() {
+        let mut bitvec = BitVec::new_fill(false, 2);
+        BPTree::from_bitvec(bitvec.clone()).unwrap();
+    }
+}
+
