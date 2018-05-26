@@ -11,8 +11,8 @@ pub trait SuccinctTree<T>: Debug {
 
     ///  Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültige Exzesses und
     /// der Anzahl öffnender und schließender Klammern
-    fn is_valid(bitvec: &BitVec) -> bool {
-        let mut excess : u64 = 0;
+    fn is_valid(bitvec: &BitVec<u8>) -> bool {
+        let mut excess = 0;
         for i  in 0..bitvec.len() {
             let x = bitvec.get_bit(i);
             if x {
@@ -20,7 +20,7 @@ pub trait SuccinctTree<T>: Debug {
             } else {
                 excess = excess - 1;
             }
-            if excess == 0 && i < bitvec.len() {
+            if excess == 0 && i < bitvec.len() - 1 {
                 return false
             }
         }
