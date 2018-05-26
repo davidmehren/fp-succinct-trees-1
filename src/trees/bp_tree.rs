@@ -8,8 +8,9 @@ use failure::Error;
 use std::fmt;
 
 pub struct BPTree {
-    bits: BitVec<u32>,
+    bits: BitVec<u8>,
     rankselect: RankSelect,
+    rminmax: String,
 }
 
 impl SuccinctTree<BPTree> for BPTree {
@@ -49,6 +50,7 @@ impl BPTree {
         BPTree {
             bits: BitVec::new_fill(false, 10),
             rankselect: RankSelect::new(bits, 1),
+            rminmax: "foo".to_string(),
         }
     }
 }
