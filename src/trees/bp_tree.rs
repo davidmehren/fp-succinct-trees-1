@@ -1,11 +1,11 @@
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, BitsMut};
 use common::succinct_tree::SuccinctTree;
+use failure::Error;
 use id_tree::Tree;
+use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
-use failure::Error;
-use std::fmt;
 
 pub struct BPTree {
     bits: BitVec<u8>,
@@ -41,7 +41,6 @@ impl Debug for BPTree {
     }
 }
 
-
 impl BPTree {
     pub fn stub_create() -> BPTree {
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 64);
@@ -76,7 +75,10 @@ mod tests {
         let mut bitvec = BitVec::new_fill(false, 2);
         bitvec.set_bit(0, true);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
-        assert_eq!(tree.bits, bitvec, "BPTree seems to somehow change the bitvector it was created with.");
+        assert_eq!(
+            tree.bits, bitvec,
+            "BPTree seems to somehow change the bitvector it was created with."
+        );
     }
 
     #[test]
@@ -86,4 +88,3 @@ mod tests {
         BPTree::from_bitvec(bitvec.clone()).unwrap();
     }
 }
-

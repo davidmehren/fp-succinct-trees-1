@@ -1,6 +1,6 @@
-extern crate id_tree;
-extern crate bv;
 extern crate bio;
+extern crate bv;
+extern crate id_tree;
 #[macro_use]
 extern crate failure;
 
