@@ -1,13 +1,11 @@
 language: rust
+
 rust:
   - stable
   - beta
   - nightly
 
-before_script:
-- rustup component add rustfmt-preview
 script:
-- cargo fmt --all -- --check
 - cargo build
 - cargo test
 
@@ -15,4 +13,11 @@ matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
+
+jobs:
+  include:
+    - stage: formatting
+      rust: nightly
+      script: rustup component add rustfmt-preview && cargo fmt --all -- --check
+
 cache: cargo
