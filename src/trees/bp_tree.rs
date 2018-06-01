@@ -1,16 +1,27 @@
+use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, BitsMut};
 use common::succinct_tree::SuccinctTree;
-use failure::Error;
+use failure::{Error, ResultExt};
 use id_tree::Tree;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
 
+#[derive(Serialize, Deserialize)]
 pub struct BPTree {
     bits: BitVec<u8>,
     rankselect: RankSelect,
     rminmax: String,
+}
+
+impl PartialEq for BPTree {
+    fn eq(&self, other: &BPTree) -> bool {
+        self.bits == other.bits
+    }
 }
 
 impl SuccinctTree<BPTree> for BPTree {
@@ -64,6 +75,19 @@ impl BPTree {
             rminmax: "foo".to_string(),
         })
     }
+
+    pub fn from_file(path: String) -> Result<BPTree, Error> {
+        let file = fs::read(path).context("Could not read saved tree.")?;
+        let tree: BPTree = deserialize(&file).context("Error while deserializing tree.")?;
+        Ok(tree)
+    }
+
+    pub fn save_to(&self, path: String) -> Result<(), Error> {
+        let encoded = serialize(&self).context("Error while serializing tree.")?;
+        let mut file = File::create(path).context("Could not save tree.")?;
+        file.write_all(&encoded)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -84,7 +108,26 @@ mod tests {
     #[test]
     #[should_panic(expected = "ErrorMessage { msg: \"Bit vector not valid.\" }")]
     fn new_from_bitvec_invalid() {
-        let mut bitvec = BitVec::new_fill(false, 2);
+        let bitvec = BitVec::new_fill(false, 2);
         BPTree::from_bitvec(bitvec.clone()).unwrap();
     }
+
+    #[test]
+    fn save_load() {
+        let tree = BPTree::stub_create();
+        tree.save_to("testdata/bptree.testdata".to_string())
+            .unwrap();
+        let result = BPTree::from_file("testdata/bptree.testdata".to_string()).unwrap();
+        assert_eq!(
+            tree, result,
+            "The loaded tree is not equal to the original one."
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Error while deserializing tree.")]
+    fn load_invaild() {
+        BPTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
+    }
+
 }
