@@ -2,7 +2,7 @@
 #[fail(display = "Supplied an invalid index")]
 pub struct IndexOutOfBoundsError;
 
-#[derive(Fail, Debug)]
+#[derive(Fail, Debug, PartialEq)]
 pub enum NodeError {
     #[fail(display = "The supplied index does not reference a node.")]
     NotANodeError,

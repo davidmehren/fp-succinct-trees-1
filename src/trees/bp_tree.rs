@@ -2,7 +2,6 @@ use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::Bits;
 use bv::{BitVec, BitsMut};
-use common::errors::IndexOutOfBoundsError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
 use failure::{Error, ResultExt};
@@ -34,7 +33,7 @@ impl SuccinctTree<BPTree> for BPTree {
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
-        if index > self.bits.bit_len() {
+        if index >= self.bits.bit_len() {
             Err(NodeError::NotANodeError)
         } else {
             Ok(!self.bits.get_bit(index + 1))
@@ -158,5 +157,50 @@ mod tests {
     #[should_panic(expected = "Error while deserializing tree.")]
     fn load_invaild() {
         BPTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
+    }
+
+    #[test]
+    fn is_leaf() {
+        let mut bitvec = BitVec::new_fill(false, 4);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert!(tree.is_leaf(1).unwrap());
+    }
+
+    #[test]
+    fn is_no_leaf() {
+        let mut bitvec = BitVec::new_fill(false, 4);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert!(!tree.is_leaf(0).unwrap());
+    }
+
+    #[test]
+    fn is_leaf_wrongindex() {
+        let mut bitvec = BitVec::new_fill(false, 4);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.is_leaf(4).unwrap_err(), NodeError::NotANodeError);
+    }
+
+    #[test]
+    fn first_child() {
+        let mut bitvec = BitVec::new_fill(false, 4);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.first_child(0).unwrap(), 1);
+    }
+
+    #[test]
+    fn first_child_no_parent() {
+        let mut bitvec = BitVec::new_fill(false, 4);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.first_child(1).unwrap_err(), NodeError::NotAParentError);
     }
 }
