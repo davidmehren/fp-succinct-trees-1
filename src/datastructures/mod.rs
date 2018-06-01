@@ -1,1 +1,1 @@
-pub mod rmM_node;
+pub mod min_max;
