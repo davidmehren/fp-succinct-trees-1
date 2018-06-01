@@ -41,12 +41,10 @@ impl MinMax {
 
 #[derive(Clone)]
 pub struct MinMaxNode {
-    excess : i32,
-    min_excess : i32,
-    number_min_excess : u64,
-    max_excess : i32,
-    starts : u64,
-    ends : u64,
+    mut excess : i32,
+    mut min_excess : i32,
+    mut number_min_excess : u64,
+    mut max_excess : i32,
 }
 
 impl Debug for MinMaxNode {
