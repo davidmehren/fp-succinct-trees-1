@@ -1,12 +1,13 @@
 use bv::{BitVec, Bits, BitsMut};
+use common::errors::NodeError;
 use id_tree::Tree;
 use std::fmt::Debug;
 
 pub trait SuccinctTree<T>: Debug {
-    fn is_leaf(&self, index: u64) -> bool;
-    fn parent(&self, index: u64) -> bool;
-    fn first_child(&self, index: u64) -> Option<u64>;
-    fn next_sibling(&self, index: u64) -> Option<u64>;
+    fn is_leaf(&self, index: u64) -> Result<bool, NodeError>;
+    fn parent(&self, index: u64) -> Result<bool, NodeError>;
+    fn first_child(&self, index: u64) -> Result<u64, NodeError>;
+    fn next_sibling(&self, index: u64) -> Result<u64, NodeError>;
     fn from_id_tree(tree: Tree<i32>) -> T;
 
     /// Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültige Exzesses und

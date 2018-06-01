@@ -1,6 +1,9 @@
 use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
+use bv::Bits;
 use bv::{BitVec, BitsMut};
+use common::errors::IndexOutOfBoundsError;
+use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
 use failure::{Error, ResultExt};
 use id_tree::Tree;
@@ -25,19 +28,38 @@ impl PartialEq for BPTree {
 }
 
 impl SuccinctTree<BPTree> for BPTree {
-    fn is_leaf(&self, index: u64) -> bool {
+    /// Checks if a node is a leaf.
+    /// # Arguments
+    /// * `index` The index of the node to check
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
+        if index > self.bits.bit_len() {
+            Err(NodeError::NotANodeError)
+        } else {
+            Ok(!self.bits.get_bit(index + 1))
+        }
+    }
+
+    fn parent(&self, index: u64) -> Result<bool, NodeError> {
         unimplemented!()
     }
 
-    fn parent(&self, index: u64) -> bool {
-        unimplemented!()
+    /// Returns the index of the nodes first child.
+    /// # Arguments
+    /// * `index` The index of the node to get the first child of.
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    /// * `NotAParentError` If `index` references a leaf.
+    fn first_child(&self, index: u64) -> Result<u64, NodeError> {
+        if self.is_leaf(index)? {
+            Err(NodeError::NotAParentError)
+        } else {
+            Ok(index + 1)
+        }
     }
 
-    fn first_child(&self, index: u64) -> Option<u64> {
-        unimplemented!()
-    }
-
-    fn next_sibling(&self, index: u64) -> Option<u64> {
+    fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!()
     }
 
@@ -53,6 +75,14 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
+    fn pre_rank(&self, index: usize) {
+        self.rankselect.rank_1(index);
+    }
+
+    fn pre_select(&self, index: usize) {
+        self.rankselect.select_1(index as u32);
+    }
+
     pub fn stub_create() -> BPTree {
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 64);
         bits.set_bit(5, true);
@@ -129,5 +159,4 @@ mod tests {
     fn load_invaild() {
         BPTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
     }
-
 }
