@@ -1,4 +1,4 @@
-use bv::{BitVec, Bits, BitsMut};
+use bv::{BitVec, Bits};
 use common::errors::NodeError;
 use id_tree::Tree;
 use std::fmt::Debug;
@@ -22,9 +22,9 @@ pub trait SuccinctTree<T>: Debug {
         for i in 0..bitvec.len() {
             let x = bitvec.get_bit(i);
             if x {
-                excess = excess + 1;
+                excess += 1;
             } else {
-                excess = excess - 1;
+                excess -= 1;
             }
             if excess == 0 && i < bitvec.len() - 1 {
                 return false;

@@ -18,5 +18,5 @@ fn main() {
 
 fn run() -> Result<(), Error> {
     BPTree::stub_create();
-    return Ok(());
+    Ok(())
 }
