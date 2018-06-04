@@ -5,7 +5,12 @@ use bv::{BitVec, BitsMut};
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
 use failure::{Error, ResultExt};
+use id_tree::InsertBehavior::AsRoot;
+use id_tree::InsertBehavior::UnderNode;
+use id_tree::Node;
+use id_tree::NodeId;
 use id_tree::Tree;
+use id_tree::TreeBuilder;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -58,18 +63,26 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
-    fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!()
+    fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
+        let root_id = tree.root_node_id().unwrap();
+        let bitvec = BPTree::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree);
+
+        let superblock_size = BPTree::calc_superblock_size(bitvec.len());
+        Ok(BPTree {
+            rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
+            bits: bitvec,
+            rminmax: "foo".to_string(),
+        })
     }
 
-    fn from_id_tree(tree: Tree<i32>) -> BPTree {
+    fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!()
     }
 }
 
 impl Debug for BPTree {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
+        self.bits.fmt(f)
     }
 }
 
@@ -97,7 +110,7 @@ impl BPTree {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(format_err!("Bit vector not valid."));
         }
-        let superblock_size = ((bitvec.len() as f32).log2().powi(2) / 32.0).ceil();
+        let superblock_size = BPTree::calc_superblock_size(bitvec.len());
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
@@ -116,6 +129,23 @@ impl BPTree {
         let mut file = File::create(path).context("Could not save tree.")?;
         file.write_all(&encoded)?;
         Ok(())
+    }
+
+    fn calc_superblock_size(length: u64) -> f32 {
+        ((length as f32).log2().powi(2) / 32.0).ceil()
+    }
+
+    fn traverse_id_tree_for_bitvec(node: &Node<i32>, ref tree: &Tree<i32>) -> BitVec<u8> {
+        let mut bitvec = BitVec::new();
+        bitvec.push(true);
+        for child in node.children() {
+            let bitvec_rec = BPTree::traverse_id_tree_for_bitvec(tree.get(child).unwrap(), &tree);
+            for bit in 0..bitvec_rec.len() {
+                bitvec.push(bitvec_rec.get_bit(bit));
+            }
+        }
+        bitvec.push(false);
+        bitvec
     }
 }
 
@@ -202,5 +232,23 @@ mod tests {
         bitvec.set_bit(1, true);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(1).unwrap_err(), NodeError::NotAParentError);
+    }
+
+    #[test]
+    fn traverse_id_tree_for_bitvec() {
+        let mut bitvec = BitVec::new_fill(false, 8);
+        bitvec.set_bit(0, true);
+        bitvec.set_bit(1, true);
+        bitvec.set_bit(2, true);
+        bitvec.set_bit(5, true);
+        let expected_tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree.insert(Node::new(0), AsRoot).unwrap();
+        let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
+
+        let tree = BPTree::from_id_tree(id_tree).unwrap_or(BPTree::stub_create());
+        assert_eq!(tree, expected_tree);
     }
 }

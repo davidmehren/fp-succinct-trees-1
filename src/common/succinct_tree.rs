@@ -1,5 +1,6 @@
 use bv::{BitVec, Bits};
 use common::errors::NodeError;
+use failure::Error;
 use id_tree::Tree;
 use std::fmt::Debug;
 
@@ -8,7 +9,7 @@ pub trait SuccinctTree<T>: Debug {
     fn parent(&self, index: u64) -> Result<bool, NodeError>;
     fn first_child(&self, index: u64) -> Result<u64, NodeError>;
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError>;
-    fn from_id_tree(tree: Tree<i32>) -> T;
+    fn from_id_tree(tree: Tree<i32>) -> Result<T, Error>;
 
     /// Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültige Exzesses und
     /// der Anzahl öffnender und schließender Klammern
