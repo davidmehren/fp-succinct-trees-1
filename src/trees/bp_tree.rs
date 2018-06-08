@@ -88,12 +88,12 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
-    fn pre_rank(&self, index: usize) {
+    fn pre_rank(&self, index: u64) {
         self.rankselect.rank_1(index);
     }
 
-    fn pre_select(&self, index: usize) {
-        self.rankselect.select_1(index as u32);
+    fn pre_select(&self, index: u64) {
+        self.rankselect.select_1(index);
     }
 
     pub fn stub_create() -> BPTree {
