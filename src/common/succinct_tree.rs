@@ -34,5 +34,4 @@ pub trait SuccinctTree<T>: Debug {
         }
         true
     }
-
 }

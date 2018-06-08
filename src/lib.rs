@@ -6,6 +6,7 @@ extern crate failure;
 #[macro_use]
 extern crate serde_derive;
 extern crate bincode;
+extern crate serde;
 
 pub mod common;
 pub mod trees;
