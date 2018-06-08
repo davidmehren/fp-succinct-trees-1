@@ -3,23 +3,23 @@ use bv::{BitVec, Bits};
 use common::errors::NodeError;
 
 pub struct MinMax {
-    n: usize,
+    bits_len: usize,
     bits: BitVec<u8>,
-    blocksize: usize,
+    block_size: usize,
     heap: Vec<MinMaxNode>,
 }
 
 impl MinMax {
     pub fn new(bits: BitVec<u8>, block_size: usize) -> MinMax {
-        let n = bits.len() as usize;
+        let bits_len = bits.len() as usize;
 
         let mut number_of_blocks = 0;
 
-        if n % block_size != 0 {
-            number_of_blocks = n/block_size + 1;
+        if bits_len % block_size != 0 {
+            number_of_blocks = bits_len/block_size + 1;
         }
         else {
-            number_of_blocks = n/block_size;
+            number_of_blocks = bits_len/block_size;
         }
 
         let max_blocks = pow(2, ceil(log2(number_of_blocks)));
@@ -40,7 +40,7 @@ impl MinMax {
         let mut number_min_excess = 0;
         let mut max_excess = 0;
 
-        for bit_index in 0..bits.len() {
+        for bit_index in 0..bits_len {
             if bit_index % (block_size - 1) == 0 {
                 //Werte in Node speichern
 
@@ -51,12 +51,11 @@ impl MinMax {
         }
 
         MinMax{
-            n,
+            bits_len,
             bits,
-            blocksize,
+            block_size,
             heap,
         }
-
     }
 
     pub fn excess (u64: index) -> Result<u64, NodeError> {
@@ -78,6 +77,15 @@ pub struct MinMaxNode {
     mut min_excess : i32,
     mut number_min_excess : u64,
     mut max_excess : i32,
+}
+
+impl MinMaxNode {
+    fn set_values (&self, i32: excess, i32: min_excess, u64: number_min_excess, i32: max_excess) {
+        &self.excess = excess;
+        &self.min_excess = min_excess;
+        &self.number_min_excess = number_min_excess;
+        &self.max_excess = max_excess;
+    }
 }
 
 impl Debug for MinMaxNode {
