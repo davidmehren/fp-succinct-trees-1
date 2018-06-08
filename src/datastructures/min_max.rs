@@ -1,6 +1,7 @@
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
 use common::errors::NodeError;
+use std::fmt::Debug;
 use std::ops::Deref;
 use std::f64;
 
