@@ -31,9 +31,6 @@ impl MinMax {
 
         let mut heap = vec![MinMaxNode::default(); heap_size];
 
-        let iter = bits.iter();
-        let next = iter.next();
-
         let mut heap_index = max_blocks; // n/2 +1
 
         let mut excess = 0;
@@ -56,7 +53,7 @@ impl MinMax {
                 //Werte in Node speichern
 //                let node = MinMaxNode::Default();
 //                node = heap.get_mut(heap_index);
-                heap.get_mut(heap_index).set_values(excess, min_excess, number_min_excess, max_excess);
+                heap.get_mut(heap_index).set_values(&excess, &min_excess, &number_min_excess, &max_excess);
                 heap_index += 1;
                 excess = 0;
                 min_excess = 0;
