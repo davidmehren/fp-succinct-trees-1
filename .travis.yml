@@ -1,13 +1,21 @@
+sudo: required
 language: rust
-
 rust:
   - stable
   - beta
   - nightly
 
+addons:
+  apt:
+    packages:
+    - binutils-dev
+    - libcurl4-openssl-dev
+    - zlib1g-dev
+    - libdw-dev
+    - libiberty-dev
+
 script:
-- cargo build
-- cargo test
+- ./travis_coverage.sh
 
 matrix:
   allow_failures:
@@ -20,4 +28,8 @@ jobs:
       rust: nightly
       script: rustup component add rustfmt-preview && cargo fmt --all -- --check
 
-cache: cargo
+cache:
+  - cargo
+  - ccache
+  - directories:
+    - $HOME/.local/bin
