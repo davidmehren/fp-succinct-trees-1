@@ -99,6 +99,13 @@ impl LOUDSTree {
                 .select_0(self.rankselect.rank_1(index)? + n - 2)? + 1,
         )
     }
+    pub fn degree(&self, index: u64) -> Option<u64> {
+        Some(self.next_0(index)? - index)
+    }
+    pub fn child_rank(&self, index: u64) -> Option<u64> {
+        let y = self.rankselect.select_1(self.rankselect.rank_0(index - 1)?)?;
+        Some(y - self.prev_0(y)?)
+    }
     pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<LOUDSTree, Error> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(format_err!("Bit vector not valid."));
