@@ -92,6 +92,7 @@ impl SuccinctTree<BPTree> for BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
+            minmax: MinMax::new(bitvec, 1024),
         })
     }
 }
@@ -170,6 +171,7 @@ impl BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
+            minmax: MinMax::new(bitvec, 1024),
         })
     }
 

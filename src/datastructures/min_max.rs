@@ -1,5 +1,6 @@
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
+use std::fmt::Debug;
 use common::errors::NodeError;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -85,7 +86,7 @@ impl MinMax {
     }
 }
 
-#[derive(Clone, Debug, Default,Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct MinMaxNode {
     excess : i32,
     min_excess : i32,
