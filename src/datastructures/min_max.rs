@@ -49,6 +49,6 @@ pub struct MinMaxNode {
 
 impl Debug for MinMaxNode {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "({}, {}, {}, {}, {}, {})", self.e, self.m, self.n, self.M, self.starts, self.ends)
+        write!(f, "({}, {}, {}, {}, {}, {})", self.excess, self.min_excess, self.number_min_excess, self.max_excess)
     }
 }
