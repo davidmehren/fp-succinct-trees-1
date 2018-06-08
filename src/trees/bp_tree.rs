@@ -43,11 +43,17 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
+    /// Returns the index of the parent of this node
+    /// # Arguments
+    /// * `index` The index of the node to get the parent of.
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    /// * `NotALeafError` If `index` references a parent.
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
-        if index >= self.bits.bit_len() {
-            Err(NodeError::NotANodeError)
+        if !self.is_leaf(index)? {
+            Err(NodeError::NotALeafError)
         } else {
-            Ok(true)
+            Ok(self.minmax.enclose(index)?)
         }
     }
 
@@ -65,8 +71,13 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
+    /// Returns the index of the nodes first child.
+    /// # Arguments
+    /// * `index` The index of the node to get the first child of.
+    /// # Errors
+    ///
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!()
+        Ok(self.minmax.find_close(index)? + 1)
     }
 
     fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
@@ -79,8 +90,8 @@ impl SuccinctTree<BPTree> for BPTree {
         let superblock_size = BPTree::calc_superblock_size(bitvec.len());
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
+            minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
-            minmax: MinMax::new(bitvec, 1024),
         })
     }
 }
@@ -92,25 +103,64 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
+
+    /// Returns the rank of this index
+    /// # Arguments
+    /// * `index` The index of the node to get the rank of.
+    ///
     pub fn pre_rank(&self, index: u64) {
         self.rankselect.rank_1(index);
     }
 
+    /// Returns the select to this index
+    /// # Arguments
+    /// * `index` The index of the node to get the select of.
+    ///
     pub fn pre_select(&self, index: u64) {
         self.rankselect.select_1(index);
     }
 
+    /// Returns whether the node at `x` is a parent of the node `y`
+    /// # Arguments
+    /// * `x` The index of the node which should be parent
+    /// * `y` The index of the node which should be child
+    ///
+    pub fn ancestor(&self, x: u64, y: u64) -> Result<bool, NodeError>{
+        Ok(x <= y && y <= self.minmax.find_close(x)?)
+    }
+
+    /// Returns the depth of the tree at this index
+    /// # Arguments
+    /// * `index` The index where the depth should be calculated.
+    ///
+    pub fn depth(&self, index: u64) -> Result<u64, NodeError>{
+        Ok(self.minmax.excess(index)?)
+    }
+
+    /// Returns the size of the subtree from this index
+    /// # Arguments
+    /// * `index` The index where the subtree size should be calculated.
+    ///
+    pub fn subtree_size(&self, index: u64) -> Result<u64, NodeError>{
+        Ok((self.minmax.find_close(index)? - index + 1) / 2)
+    }
+
+    /// Returns a () - BPTree
+    ///
     pub fn stub_create() -> BPTree {
-        let mut bitvec: BitVec<u8> = BitVec::new_fill(false, 64);
-        bitvec.set_bit(5, true);
-        bitvec.set_bit(32, true);
+        let mut bitvec: BitVec<u8> = BitVec::new_fill(false, 2);
+        bitvec.set_bit(0, true);
         BPTree {
-            bits: BitVec::new_fill(false, 10),
-            rankselect: RankSelect::new(bitvec, 1),
-            minmax: MinMax::new(bitvec, 1024),
+            rankselect: RankSelect::new(bitvec.clone(), 1),
+            minmax: MinMax::new(bitvec.clone(), 1024),
+            bits: bitvec,
         }
     }
 
+    /// Returns a BPTree from a given BitVec
+    /// # Arguments
+    /// * `bitvec` The BitVec for the specified BPTree
+    ///
     pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<BPTree, Error> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(format_err!("Bit vector not valid."));
@@ -118,8 +168,8 @@ impl BPTree {
         let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
+            minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
-            minmax: MinMax::new(bitvec, 1024),
         })
     }
 
