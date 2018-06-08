@@ -45,7 +45,7 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
-    fn parent(&self, index: u64) -> Result<bool, NodeError> {
+    fn parent(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!()
     }
 
@@ -111,7 +111,7 @@ impl BPTree {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(format_err!("Bit vector not valid."));
         }
-        let superblock_size = BPTree::calc_superblock_size(bitvec.len());
+        let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
@@ -130,10 +130,6 @@ impl BPTree {
         let mut file = File::create(path).context("Could not save tree.")?;
         file.write_all(&encoded)?;
         Ok(())
-    }
-
-    fn calc_superblock_size(length: u64) -> f32 {
-        ((length as f32).log2().powi(2) / 32.0).ceil()
     }
 
     fn traverse_id_tree_for_bitvec(node: &Node<i32>, ref tree: &Tree<i32>) -> BitVec<u8> {

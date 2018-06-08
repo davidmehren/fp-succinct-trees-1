@@ -6,7 +6,7 @@ use std::fmt::Debug;
 
 pub trait SuccinctTree<T>: Debug {
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError>;
-    fn parent(&self, index: u64) -> Result<bool, NodeError>;
+    fn parent(&self, index: u64) -> Result<u64, NodeError>;
     fn first_child(&self, index: u64) -> Result<u64, NodeError>;
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError>;
     fn from_id_tree(tree: Tree<i32>) -> Result<T, Error>;
@@ -35,5 +35,9 @@ pub trait SuccinctTree<T>: Debug {
             return false;
         }
         true
+    }
+
+    fn calc_superblock_size(length: u64) -> f32 {
+        ((length as f32).log2().powi(2) / 32.0).ceil()
     }
 }
