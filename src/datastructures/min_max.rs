@@ -73,15 +73,15 @@ impl MinMax {
         }
     }
 
-    pub fn excess (index: u64) -> Result<u64, NodeError> {
+    pub fn excess (&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
-    pub fn find_close(index: u64) -> Result<u64, NodeError> {
+    pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
-    pub fn enclose(index: u64) -> Result<u64, NodeError> {
+    pub fn enclose(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 }
