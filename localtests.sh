@@ -1,4 +1,5 @@
 #!/bin/bash
+
 function log_info {
     echo -e "\e[1m\e[4m\e[33mInfo: ${@}\e[39m\e[0m"
 }
