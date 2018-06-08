@@ -4,13 +4,11 @@ use bv::Bits;
 use bv::{BitVec, BitsMut};
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
+use datastructures::min_max::MinMax;
 use failure::{Error, ResultExt};
-use id_tree::InsertBehavior::AsRoot;
-use id_tree::InsertBehavior::UnderNode;
 use id_tree::Node;
 use id_tree::NodeId;
 use id_tree::Tree;
-use id_tree::TreeBuilder;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -22,7 +20,7 @@ use std::io::Write;
 pub struct BPTree {
     bits: BitVec<u8>,
     rankselect: RankSelect,
-    rminmax: String,
+    minmax: MinMax,
 }
 
 impl PartialEq for BPTree {
@@ -46,7 +44,11 @@ impl SuccinctTree<BPTree> for BPTree {
     }
 
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!()
+        if index >= self.bits.bit_len() {
+            Err(NodeError::NotANodeError)
+        } else {
+            Ok(true)
+        }
     }
 
     /// Returns the index of the nodes first child.
@@ -68,15 +70,17 @@ impl SuccinctTree<BPTree> for BPTree {
     }
 
     fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
-        // TODO: This should not panic on an empty tree
-        let root_id = tree.root_node_id().unwrap();
-        let bitvec = BPTree::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree);
+        let mut bitvec = BitVec::new();
+        if tree.height() > 0 {
+            let root_id: &NodeId = tree.root_node_id().unwrap();
+            bitvec = BPTree::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree);
+        }
 
         let superblock_size = BPTree::calc_superblock_size(bitvec.len());
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
-            rminmax: "foo".to_string(),
+            minmax: MinMax::new(bitvec, 1024),
         })
     }
 }
@@ -88,22 +92,22 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
-    fn pre_rank(&self, index: u64) {
+    pub fn pre_rank(&self, index: u64) {
         self.rankselect.rank_1(index);
     }
 
-    fn pre_select(&self, index: u64) {
+    pub fn pre_select(&self, index: u64) {
         self.rankselect.select_1(index);
     }
 
     pub fn stub_create() -> BPTree {
-        let mut bits: BitVec<u8> = BitVec::new_fill(false, 64);
-        bits.set_bit(5, true);
-        bits.set_bit(32, true);
+        let mut bitvec: BitVec<u8> = BitVec::new_fill(false, 64);
+        bitvec.set_bit(5, true);
+        bitvec.set_bit(32, true);
         BPTree {
             bits: BitVec::new_fill(false, 10),
-            rankselect: RankSelect::new(bits, 1),
-            rminmax: "foo".to_string(),
+            rankselect: RankSelect::new(bitvec, 1),
+            minmax: MinMax::new(bitvec, 1024),
         }
     }
 
@@ -115,7 +119,7 @@ impl BPTree {
         Ok(BPTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
-            rminmax: "foo".to_string(),
+            minmax: MinMax::new(bitvec, 1024),
         })
     }
 
@@ -149,6 +153,9 @@ impl BPTree {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use id_tree::InsertBehavior::AsRoot;
+    use id_tree::InsertBehavior::UnderNode;
+    use id_tree::TreeBuilder;
 
     #[test]
     fn new_from_bitvec() {

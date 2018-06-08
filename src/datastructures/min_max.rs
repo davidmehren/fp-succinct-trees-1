@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
 use common::errors::NodeError;
 use std::ops::Deref;

@@ -9,4 +9,5 @@ extern crate bincode;
 extern crate serde;
 
 pub mod common;
+pub mod datastructures;
 pub mod trees;
