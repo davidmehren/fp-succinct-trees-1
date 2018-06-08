@@ -63,7 +63,12 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
+    fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
+        unimplemented!()
+    }
+
     fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
+        // TODO: This should not panic on an empty tree
         let root_id = tree.root_node_id().unwrap();
         let bitvec = BPTree::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree);
 
@@ -73,10 +78,6 @@ impl SuccinctTree<BPTree> for BPTree {
             bits: bitvec,
             rminmax: "foo".to_string(),
         })
-    }
-
-    fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!()
     }
 }
 
@@ -208,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn is_leaf_wrongindex() {
+    fn is_leaf_wrong_index() {
         let mut bitvec = BitVec::new_fill(false, 4);
         bitvec.set_bit(0, true);
         bitvec.set_bit(1, true);
