@@ -83,7 +83,7 @@ impl LOUDSTree {
     }
 
     fn prev_1(&self, index: u64) -> Option<u64> {
-        self.rankselect.select_1(self.rankselect.rank_1(index)?)
+        self.rankselect.select_1(self.rankselect.rank_1(index)? - 1)
     }
 
     fn next_0(&self, index: u64) -> Option<u64> {
@@ -91,12 +91,12 @@ impl LOUDSTree {
     }
 
     fn next_1(&self, index: u64) -> Option<u64> {
-        self.rankselect.select_1(self.rankselect.rank_1(index)? + 1)
+        self.rankselect.select_1(self.rankselect.rank_1(index)?)
     }
     pub fn child(&self, index: u64, n: u64) -> Option<u64> {
         Some(
             self.rankselect
-                .select_0(self.rankselect.rank_1(index)? + n - 1)? + 1,
+                .select_0(self.rankselect.rank_1(index)? + n - 2)? + 1,
         )
     }
     pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<LOUDSTree, Error> {
