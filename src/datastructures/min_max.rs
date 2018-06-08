@@ -28,7 +28,7 @@ impl MinMax {
 
         let number_of_nodes = heap_size - max_blocks + number_of_blocks; // TODO vielleicht unnötig
 
-        let heap = vec![Sim::default(); heap_size];
+        let heap = vec![MinMaxNode::default(); heap_size];
 
         let iter = bits.iter();
         let next = iter.next();
@@ -58,38 +58,38 @@ impl MinMax {
         }
     }
 
-    pub fn excess (u64: index) -> Result<u64, NodeError> {
+    pub fn excess (index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
-    pub fn find_close(u64: index) -> Result<u64, NodeError> {
+    pub fn find_close(index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
-    pub fn enclose(u64: index) -> Result<u64, NodeError> {
+    pub fn enclose(index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct MinMaxNode {
-    mut excess : i32,
-    mut min_excess : i32,
-    mut number_min_excess : u64,
-    mut max_excess : i32,
+    excess : i32,
+    min_excess : i32,
+    number_min_excess : u64,
+    max_excess : i32,
 }
 
 impl MinMaxNode {
-    fn set_values (&self, i32: excess, i32: min_excess, u64: number_min_excess, i32: max_excess) {
-        &self.excess = excess;
-        &self.min_excess = min_excess;
-        &self.number_min_excess = number_min_excess;
-        &self.max_excess = max_excess;
+    fn set_values (&self, &excess: i32, &min_excess: i32, &number_min_excess: u64, &max_excess: i32) {
+        self.excess = excess;
+        self.min_excess = min_excess;
+        self.number_min_excess = number_min_excess;
+        self.max_excess = max_excess;
     }
 }
 
-impl Debug for MinMaxNode {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "({}, {}, {}, {})", self.excess, self.min_excess, self.number_min_excess, self.max_excess)
-    }
-}
+//impl Debug for MinMaxNode {
+//    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+//        write!(f, "({}, {}, {}, {})", self.excess, self.min_excess, self.number_min_excess, self.max_excess)
+//    }
+//}
