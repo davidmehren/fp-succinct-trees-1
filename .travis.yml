@@ -8,19 +8,23 @@ rust:
 addons:
   apt:
     packages:
-    - binutils-dev
-    - libcurl4-openssl-dev
-    - zlib1g-dev
-    - libdw-dev
-    - libiberty-dev
+      - libssl-dev
 
 script:
-- ./travis_coverage.sh
+- cargo build
+- cargo test
 
 matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
+
+after_success: |
+  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
+    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+    cargo tarpaulin --out Xml
+    bash <(curl -s https://codecov.io/bash)
+  fi
 
 jobs:
   include:
