@@ -7,6 +7,7 @@ use failure::{Error, ResultExt};
 use id_tree::Tree;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
+use common::errors::InvalidBitvecError;
 
 #[derive(Serialize, Deserialize)]
 pub struct LOUDSTree {
@@ -111,9 +112,9 @@ impl LOUDSTree {
             .select_1(self.rankselect.rank_0(index - 1)?)?;
         Some(y - self.prev_0(y)?)
     }
-    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<LOUDSTree, Error> {
+    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<LOUDSTree, InvalidBitvecError> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
-            return Err(format_err!("Bit vector not valid."));
+            return Err(InvalidBitvecError);
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(LOUDSTree {
@@ -136,6 +137,13 @@ mod tests {
             tree.bits, bitvec,
             "BPTree seems to somehow change the bitvector it was created with."
         );
+    }
+
+    #[test]
+    fn new_from_bitvec_invalid() {
+        let bitvec = bit_vec![true, true];
+        assert_eq!(
+            LOUDSTree::from_bitvec(bitvec.clone()).unwrap_err(), InvalidBitvecError);
     }
 
     #[test]

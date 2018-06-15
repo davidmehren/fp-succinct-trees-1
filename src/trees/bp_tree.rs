@@ -15,6 +15,7 @@ use std::fmt::Formatter;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use common::errors::InvalidBitvecError;
 
 #[derive(Serialize, Deserialize)]
 pub struct BPTree {
@@ -183,9 +184,9 @@ impl BPTree {
     /// # Arguments
     /// * `bitvec` The BitVec for the specified BPTree
     ///
-    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<BPTree, Error> {
+    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<BPTree, InvalidBitvecError> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
-            return Err(format_err!("Bit vector not valid."));
+            return Err(InvalidBitvecError);
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(BPTree {
@@ -240,10 +241,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "ErrorMessage { msg: \"Bit vector not valid.\" }")]
     fn new_from_bitvec_invalid() {
         let bitvec = bit_vec!(false, false);
-        BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(BPTree::from_bitvec(bitvec.clone()).unwrap_err(), InvalidBitvecError);
     }
 
     #[test]

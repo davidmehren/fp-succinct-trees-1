@@ -2,6 +2,11 @@
 #[fail(display = "Supplied an invalid index")]
 pub struct IndexOutOfBoundsError;
 
+
+#[derive(Fail, Debug, PartialEq)]
+#[fail(display = "The supplied bitvector is not valid for this tree.")]
+pub struct InvalidBitvecError;
+
 #[derive(Fail, Debug, PartialEq)]
 pub enum NodeError {
     #[fail(display = "The supplied index does not reference a node.")]
