@@ -1,3 +1,23 @@
+// Copyright 2018 Daniel Rose and Frederik Stehli.
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Range-Min-Max data structure based on Cordova and Navarro (2016)
+//!
+//! Example
+//!
+//! ```
+//! extern crate bv;
+//!
+//! use bv::BitVec;
+//!    use bv::Bits;
+//!
+//! let bits = bit_vec![true, false];
+//!        let min_max = MinMax::new(bits, 2);
+//!        assert_eq!(min_max.excess(0).unwrap(), 1);
+//! ```
+
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
 use common::errors::NodeError;
@@ -6,6 +26,7 @@ use std::f64;
 use std::fmt::Debug;
 use std::ops::Deref;
 
+/// A Range-Min-Max data structure
 #[derive(Serialize, Deserialize)]
 pub struct MinMax {
     bits_len: u64,
@@ -170,3 +191,51 @@ impl MinMaxNode {
         self.max_excess = *max_excess;
     }
 }
+
+//#[cfg(test)]
+//mod tests {
+//    use super::*;
+//    use bv::BitVec;
+//    use bv::Bits;
+//
+//    #[test]
+//    fn test_min_max() {
+//        let bits = bit_vec![
+//            true, true, true, false, true, false, true, true, false, false, false, true, false,
+//            true, true, true, false, true, false, false, false, false
+//        ];
+//        let min_max = MinMax::new(bits, 4);
+//        assert_eq!(min_max.excess(21).unwrap(), 0);
+//        assert_eq!(min_max.excess(7).unwrap(), 4);
+//        // TODO: Werden schon ungültige index-werte zurückgewiesen?
+//    }
+//
+//    #[test]
+//    fn test_excess() {
+//        let bits = bit_vec![true, false];
+//        let min_max = MinMax::new(bits, 2);
+//        assert_eq!(min_max.excess(0).unwrap(), 1);
+//        assert_eq!(min_max.excess(1).unwrap(), 0);
+//    }
+//
+//    #[test]
+//    fn test_find_close() {
+//        let bits = bit_vec![true, true, false, false];
+//        let min_max = MinMax::new(bits, 2);
+//        assert_eq!(min_max.find_close(0).unwrap(), 3);
+//        assert_eq!(min_max.find_close(1).unwrap(), 2);
+//    }
+//
+//    #[test]
+//    fn test_enclose() {
+//        let bits = bit_vec![
+//            true, true, true, false, true, false, true, true, false, false, false, true, false,ccccccfgbjiebkrnlufdricijilvgudgnenievucdlnn
+
+//            true, true, true, false, true, false, false, false, false
+//        ];
+//        let min_max = MinMax::new(bits, 4);
+//        assert_eq!(min_max.enclose(4).unwrap(), 1);
+//        assert_eq!(min_max.enclose(6).unwrap(), 1);
+//    }
+//
+//}
