@@ -10,6 +10,8 @@ pub enum NodeError {
     NotALeafError,
     #[fail(display = "The supplied index does not reference a node with leafs.")]
     NotAParentError,
+    #[fail(display = "The supplied index references the root node.")]
+    RootNodeError,
     #[fail(display = "The supplied index does not reference a node with a parent.")]
     HasNoParentError,
     #[fail(display = "The supplied index does not reference a node with a next sibling.")]

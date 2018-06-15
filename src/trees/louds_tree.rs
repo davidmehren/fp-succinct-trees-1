@@ -38,14 +38,15 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
     }
 
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
-        //TODO: Error handling
-        if index >= self.bits.bit_len() {
+        if index >= self.bits.bit_len() || index == 0 {
             Err(NodeError::NotANodeError)
+        } else if index == 1 {
+            Err(NodeError::RootNodeError)
         } else {
             Ok(self
                 .prev_0(
                     self.rankselect
-                        .select_1(self.rankselect.rank_0(index - 1).unwrap())
+                        .select_1(self.rankselect.rank_0(index).unwrap())
                         .unwrap(),
                 )
                 .unwrap() + 1)
