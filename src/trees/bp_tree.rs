@@ -1,7 +1,7 @@
 use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
+use bv::BitVec;
 use bv::Bits;
-use bv::{BitVec, BitsMut};
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
 use datastructures::min_max::MinMax;
@@ -36,11 +36,8 @@ impl SuccinctTree<BPTree> for BPTree {
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
-        if index >= self.bits.bit_len() {
-            Err(NodeError::NotANodeError)
-        } else {
-            Ok(!self.bits.get_bit(index + 1))
-        }
+        self.is_valid_index(index)?;
+        Ok(!self.bits.get_bit(index + 1))
     }
 
     /// Returns the index of the parent of this node
@@ -48,10 +45,11 @@ impl SuccinctTree<BPTree> for BPTree {
     /// * `index` The index of the node to get the parent of.
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
-    /// * `NotALeafError` If `index` references a parent.
+    /// * `HasNoParentError` If `index` references the root node.
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
-        if !self.is_leaf(index)? {
-            Err(NodeError::NotALeafError)
+        self.is_valid_index(index)?;
+        if index == 0 {
+            Err(NodeError::HasNoParentError)
         } else {
             Ok(self.minmax.enclose(index)?)
         }
@@ -71,15 +69,21 @@ impl SuccinctTree<BPTree> for BPTree {
         }
     }
 
-    /// Returns the index of the nodes first child.
+    /// Returns the index of the next sibling
     /// # Arguments
-    /// * `index` The index of the node to get the first child of.
+    /// * `index` The index of the node to get the next sibling of.
     /// # Errors
-    ///
+    /// * `NotANodeError` If `index` does not reference a node.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
+        self.is_valid_index(index)?;
         Ok(self.minmax.find_close(index)? + 1)
     }
 
+    /// Constructs a BPTree from a IDTree
+    /// # Arguments
+    /// * `tree` The IDTree which should be converted
+    /// # Errors
+    ///
     fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
         let mut bitvec = BitVec::new();
         if tree.height() > 0 {
@@ -103,52 +107,71 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
+    /// Returns whether the index is valid
+    /// # Arguments
+    /// * `index` The index which should be valid
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    pub fn is_valid_index(&self, index: u64) -> Result<bool, NodeError> {
+        if index >= self.bits.len() {
+            Err(NodeError::NotANodeError)
+        } else {
+            Ok(true)
+        }
+    }
+
     /// Returns the rank of this index
     /// # Arguments
     /// * `index` The index of the node to get the rank of.
     ///
-    pub fn pre_rank(&self, index: u64) {
-        self.rankselect.rank_1(index);
+    pub fn pre_rank(&self, index: u64) -> Option<u64> {
+        self.rankselect.rank_1(index)
     }
 
-    /// Returns the select to this index
+    /// Returns the select index to this rank
     /// # Arguments
-    /// * `index` The index of the node to get the select of.
+    /// * `rank` The rank of the nodes to get the index of.
     ///
-    pub fn pre_select(&self, index: u64) {
-        self.rankselect.select_1(index);
+    pub fn pre_select(&self, rank: u64) -> Option<u64> {
+        self.rankselect.select_1(rank)
     }
 
     /// Returns whether the node at `x` is a parent of the node `y`
     /// # Arguments
     /// * `x` The index of the node which should be parent
     /// * `y` The index of the node which should be child
-    ///
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     pub fn ancestor(&self, x: u64, y: u64) -> Result<bool, NodeError> {
+        self.is_valid_index(x)?;
+        self.is_valid_index(y)?;
         Ok(x <= y && y <= self.minmax.find_close(x)?)
     }
 
     /// Returns the depth of the tree at this index
     /// # Arguments
     /// * `index` The index where the depth should be calculated.
-    ///
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     pub fn depth(&self, index: u64) -> Result<u64, NodeError> {
+        self.is_valid_index(index)?;
         Ok(self.minmax.excess(index)?)
     }
 
     /// Returns the size of the subtree from this index
     /// # Arguments
     /// * `index` The index where the subtree size should be calculated.
-    ///
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     pub fn subtree_size(&self, index: u64) -> Result<u64, NodeError> {
+        self.is_valid_index(index)?;
         Ok((self.minmax.find_close(index)? - index + 1) / 2)
     }
 
     /// Returns a () - BPTree
     ///
     pub fn stub_create() -> BPTree {
-        let mut bitvec: BitVec<u8> = BitVec::new_fill(false, 2);
-        bitvec.set_bit(0, true);
+        let bitvec: BitVec<u8> = bit_vec![true, false];
         BPTree {
             rankselect: RankSelect::new(bitvec.clone(), 1),
             minmax: MinMax::new(bitvec.clone(), 1024),
@@ -208,8 +231,7 @@ mod tests {
 
     #[test]
     fn new_from_bitvec() {
-        let mut bitvec = BitVec::new_fill(false, 2);
-        bitvec.set_bit(0, true);
+        let bitvec = bit_vec!(true, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(
             tree.bits, bitvec,
@@ -220,7 +242,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "ErrorMessage { msg: \"Bit vector not valid.\" }")]
     fn new_from_bitvec_invalid() {
-        let bitvec = BitVec::new_fill(false, 2);
+        let bitvec = bit_vec!(false, false);
         BPTree::from_bitvec(bitvec.clone()).unwrap();
     }
 
@@ -238,62 +260,142 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Error while deserializing tree.")]
-    fn load_invaild() {
+    fn load_invalid() {
         BPTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
     }
 
     #[test]
     fn is_leaf() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec!(true, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(tree.is_leaf(1).unwrap());
     }
 
     #[test]
     fn is_no_leaf() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec!(true, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(!tree.is_leaf(0).unwrap());
     }
 
     #[test]
     fn is_leaf_wrong_index() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec!(true, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.is_leaf(4).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
+    #[ignore]
+    fn parent() {
+        let bitvec = bit_vec!(true, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(1).unwrap(), 0);
+    }
+
+    #[test]
+    fn parent_no_parent() {
+        let bitvec = bit_vec!(true, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(0).unwrap_err(), NodeError::HasNoParentError);
+    }
+
+    #[test]
     fn first_child() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec!(true, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(0).unwrap(), 1);
     }
 
     #[test]
     fn first_child_no_parent() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec!(true, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(1).unwrap_err(), NodeError::NotAParentError);
     }
 
     #[test]
+    #[ignore]
+    fn next_sibling() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.next_sibling(1).unwrap(), 3);
+    }
+
+    #[test]
+    #[ignore]
+    fn next_sibling_no_next_sibling() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(
+            tree.next_sibling(3).unwrap_err(),
+            NodeError::HasNoFurtherSiblingsError
+        );
+    }
+
+    #[test]
+    fn pre_rank() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.pre_rank(1).unwrap(), 2);
+        assert_eq!(tree.pre_rank(2).unwrap(), 2);
+        assert_eq!(tree.pre_rank(3).unwrap(), 3);
+        assert_eq!(tree.pre_rank(4).unwrap(), 3);
+        assert_eq!(tree.pre_rank(6), None);
+    }
+
+    #[test]
+    fn pre_select() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.pre_select(1).unwrap(), 0);
+        assert_eq!(tree.pre_select(2).unwrap(), 1);
+        assert_eq!(tree.pre_select(3).unwrap(), 3);
+        assert_eq!(tree.pre_select(0), None);
+        assert_eq!(tree.pre_select(4), None);
+    }
+
+    #[test]
+    #[ignore]
+    fn ancestor_is_ancestor() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert!(tree.ancestor(0, 1).unwrap());
+        assert!(tree.ancestor(0, 3).unwrap());
+    }
+
+    #[test]
+    #[ignore]
+    fn ancestor_not_a_ancestor() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert!(!tree.ancestor(1, 3).unwrap());
+        assert!(!tree.ancestor(1, 0).unwrap());
+    }
+
+    #[test]
+    #[ignore]
+    fn depth() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.depth(0).unwrap(), 1);
+        assert_eq!(tree.depth(1).unwrap(), 2);
+        assert_eq!(tree.depth(3).unwrap(), 2);
+    }
+
+    #[test]
+    #[ignore]
+    fn subtree_size() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.subtree_size(0).unwrap(), 2);
+        assert_eq!(tree.subtree_size(1).unwrap(), 1);
+        assert_eq!(tree.subtree_size(3).unwrap(), 1);
+    }
+
+    #[test]
     fn traverse_id_tree_for_bitvec() {
-        let mut bitvec = BitVec::new_fill(false, 8);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
-        bitvec.set_bit(2, true);
-        bitvec.set_bit(5, true);
+        let bitvec = bit_vec!(true, true, true, false, false, true, false, false);
         let expected_tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         let root_id: NodeId = id_tree.insert(Node::new(0), AsRoot).unwrap();

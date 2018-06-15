@@ -1,4 +1,5 @@
 extern crate bio;
+#[macro_use]
 extern crate bv;
 extern crate id_tree;
 #[macro_use]
