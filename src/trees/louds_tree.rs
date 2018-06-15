@@ -62,15 +62,17 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
     }
 
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
-        //TODO: Error handling
-        Ok(self
+        let parent_a = self.parent(index)?;
+        let sibling = self
             .rankselect
-            .select_0(
-                self.rankselect
-                    .select_1(self.rankselect.rank_0(index - 1).unwrap() + 1)
-                    .unwrap() + 1,
-            )
-            .unwrap())
+            .select_0(self.rankselect.rank_0(index - 1).unwrap() + 1)
+            .unwrap() + 1;
+        let parent_b = self.parent(sibling)?;
+        if parent_a == parent_b {
+            Ok(sibling)
+        } else {
+            Err(NodeError::NoSiblingError)
+        }
     }
 
     fn from_id_tree(tree: Tree<i32>) -> Result<LOUDSTree, Error> {
@@ -201,9 +203,22 @@ mod tests {
 
     #[test]
     fn next_sibling() {
-        let bitvec = bit_vec![true, true, false, false];
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
-        assert_eq!(tree.parent(0).unwrap_err(), NodeError::NotANodeError)
+        assert_eq!(tree.next_sibling(5).unwrap(), 7);
+        assert_eq!(tree.next_sibling(7).unwrap(), 9);
+    }
+
+    #[test]
+    fn no_next_sibling() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(
+            tree.next_sibling(10).unwrap_err(),
+            NodeError::NoSiblingError
+        );
     }
 
 }
