@@ -128,8 +128,7 @@ mod tests {
 
     #[test]
     fn new_from_bitvec() {
-        let mut bitvec = BitVec::new_fill(false, 2);
-        bitvec.set_bit(0, true);
+        let bitvec = bit_vec![true, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(
             tree.bits, bitvec,
@@ -139,46 +138,72 @@ mod tests {
 
     #[test]
     fn is_leaf() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec![true, true, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(tree.is_leaf(3).unwrap());
     }
 
     #[test]
     fn is_no_leaf() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec![true, true, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(!tree.is_leaf(1).unwrap());
     }
 
     #[test]
     fn is_leaf_wrong_index() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec![true, true, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.is_leaf(2).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
+    fn is_leaf_wrong_index2() {
+        let bitvec = bit_vec![true, true, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.is_leaf(4).unwrap_err(), NodeError::NotANodeError);
+    }
+
+    #[test]
     fn first_child() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec![true, true, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(1).unwrap(), 3);
     }
 
     #[test]
     fn first_child_no_parent() {
-        let mut bitvec = BitVec::new_fill(false, 4);
-        bitvec.set_bit(0, true);
-        bitvec.set_bit(1, true);
+        let bitvec = bit_vec![true, true, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(3).unwrap_err(), NodeError::NotAParentError);
     }
+
+    #[test]
+    fn parent() {
+        let bitvec = bit_vec![true, true, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(3).unwrap(), 1)
+    }
+
+    #[test]
+    fn parent_root_node() {
+        let bitvec = bit_vec![true, true, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(1).unwrap_err(), NodeError::RootNodeError)
+    }
+
+    #[test]
+    fn parent_no_node() {
+        let bitvec = bit_vec![true, true, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(0).unwrap_err(), NodeError::NotANodeError)
+    }
+
+    #[test]
+    fn next_sibling() {
+        let bitvec = bit_vec![true, true, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.parent(0).unwrap_err(), NodeError::NotANodeError)
+    }
+
 }
