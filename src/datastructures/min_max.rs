@@ -4,19 +4,6 @@
 // except according to those terms.
 
 //! Range-Min-Max data structure based on Cordova and Navarro (2016)
-//!
-//! Example
-//!
-//! ```
-//! extern crate bv;
-//!
-//! use bv::BitVec;
-//!    use bv::Bits;
-//!
-//! let bits = bit_vec![true, false];
-//!        let min_max = MinMax::new(bits, 2);
-//!        assert_eq!(min_max.excess(0).unwrap(), 1);
-//! ```
 
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
