@@ -1,6 +1,7 @@
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
 use common::errors::NodeError;
+use std::cmp;
 use std::f64;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -33,11 +34,11 @@ impl MinMax {
 
         let mut heap = vec![MinMaxNode::default(); heap_size as usize];
 
-        let mut heap_index = max_blocks as usize; // n/2 +1
+        let mut heap_index = (max_blocks - 1) as usize; // n/2 +1
 
         let mut excess = 0;
         let mut min_excess = 0;
-        let mut number_min_excess = 0;
+        let mut number_min_excess: u64 = 0;
         let mut max_excess = 0;
 
         for bit_index in 0..bits_len {
@@ -90,12 +91,48 @@ impl MinMax {
             }
         }
 
+        if heap_size != 1 {
+            for index in (max_blocks - 2)..=0 {
+                let left_child = &heap[(2 * index + 1) as usize];
+                let right_child = &heap[(2 * index + 2) as usize];
+                excess = left_child.excess + right_child.excess;
+                min_excess = cmp::min(
+                    left_child.excess + right_child.min_excess,
+                    left_child.min_excess,
+                );
+                if left_child.excess + right_child.min_excess == left_child.min_excess {
+                    number_min_excess =
+                        left_child.number_min_excess + right_child.number_min_excess;
+                } else if left_child.excess + right_child.min_excess > left_child.min_excess {
+                    number_min_excess = right_child.number_min_excess;
+                } else {
+                    number_min_excess = left_child.number_min_excess;
+                }
+                max_excess = cmp::max(
+                    left_child.excess + right_child.min_excess,
+                    left_child.min_excess,
+                );
+            }
+        }
+
         MinMax {
             bits_len,
             bits,
             block_size,
             heap,
         }
+    }
+
+    fn parent(index: u64) -> u64 {
+        (index - 1) / 2
+    }
+
+    fn left_child(index: u64) -> u64 {
+        2 * index + 1
+    }
+
+    fn right_child(index: u64) -> u64 {
+        2 * index + 2
     }
 
     pub fn excess(&self, index: u64) -> Result<u64, NodeError> {
