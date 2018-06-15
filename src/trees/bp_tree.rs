@@ -103,7 +103,6 @@ impl Debug for BPTree {
 }
 
 impl BPTree {
-
     /// Returns the rank of this index
     /// # Arguments
     /// * `index` The index of the node to get the rank of.
@@ -125,7 +124,7 @@ impl BPTree {
     /// * `x` The index of the node which should be parent
     /// * `y` The index of the node which should be child
     ///
-    pub fn ancestor(&self, x: u64, y: u64) -> Result<bool, NodeError>{
+    pub fn ancestor(&self, x: u64, y: u64) -> Result<bool, NodeError> {
         Ok(x <= y && y <= self.minmax.find_close(x)?)
     }
 
@@ -133,7 +132,7 @@ impl BPTree {
     /// # Arguments
     /// * `index` The index where the depth should be calculated.
     ///
-    pub fn depth(&self, index: u64) -> Result<u64, NodeError>{
+    pub fn depth(&self, index: u64) -> Result<u64, NodeError> {
         Ok(self.minmax.excess(index)?)
     }
 
@@ -141,7 +140,7 @@ impl BPTree {
     /// # Arguments
     /// * `index` The index where the subtree size should be calculated.
     ///
-    pub fn subtree_size(&self, index: u64) -> Result<u64, NodeError>{
+    pub fn subtree_size(&self, index: u64) -> Result<u64, NodeError> {
         Ok((self.minmax.find_close(index)? - index + 1) / 2)
     }
 

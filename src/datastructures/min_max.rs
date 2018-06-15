@@ -1,10 +1,9 @@
 use bincode::{deserialize, serialize};
 use bv::{BitVec, Bits};
-use std::fmt::Debug;
 use common::errors::NodeError;
+use std::f64;
 use std::fmt::Debug;
 use std::ops::Deref;
-use std::f64;
 
 #[derive(Serialize, Deserialize)]
 pub struct MinMax {
@@ -21,11 +20,10 @@ impl MinMax {
         let mut number_of_blocks = 0;
 
         if bits_len % block_size != 0 {
-            number_of_blocks = bits_len/block_size + 1;
+            number_of_blocks = bits_len / block_size + 1;
+        } else {
+            number_of_blocks = bits_len / block_size;
         }
-            else {
-                number_of_blocks = bits_len/block_size;
-            }
 
         let max_blocks = 2u32.pow((number_of_blocks as f64).log2().ceil() as u32);
 
@@ -46,17 +44,20 @@ impl MinMax {
             // Werte berechnen:
             if bits.get_bit(bit_index as u64) {
                 excess += 1;
+            } else {
+                excess -= 1;
             }
-                else {
-                    excess -= 1;
-                }
             if excess > max_excess {
                 max_excess = excess;
             }
             if bit_index != 0 && (bit_index % block_size) - 1 == 0 {
                 //Werte in Node speichern
-                heap.get_mut(heap_index).unwrap()
-                    .set_values(&excess, &min_excess, &number_min_excess, &max_excess);
+                heap.get_mut(heap_index).unwrap().set_values(
+                    &excess,
+                    &min_excess,
+                    &number_min_excess,
+                    &max_excess,
+                );
                 heap_index += 1;
                 excess = 0;
                 min_excess = 0;
@@ -65,7 +66,7 @@ impl MinMax {
             }
         }
 
-        MinMax{
+        MinMax {
             bits_len,
             bits,
             block_size,
@@ -73,7 +74,7 @@ impl MinMax {
         }
     }
 
-    pub fn excess (&self, index: u64) -> Result<u64, NodeError> {
+    pub fn excess(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
@@ -88,14 +89,20 @@ impl MinMax {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct MinMaxNode {
-    excess : i32,
-    min_excess : i32,
-    number_min_excess : u64,
-    max_excess : i32,
+    excess: i32,
+    min_excess: i32,
+    number_min_excess: u64,
+    max_excess: i32,
 }
 
 impl MinMaxNode {
-    pub fn set_values(&mut self, excess: &i32, min_excess: &i32, number_min_excess: &u64, max_excess: &i32) {
+    pub fn set_values(
+        &mut self,
+        excess: &i32,
+        min_excess: &i32,
+        number_min_excess: &u64,
+        max_excess: &i32,
+    ) {
         self.excess = *excess;
         self.min_excess = *min_excess;
         self.number_min_excess = *number_min_excess;
