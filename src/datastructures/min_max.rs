@@ -7,15 +7,15 @@ use std::ops::Deref;
 
 #[derive(Serialize, Deserialize)]
 pub struct MinMax {
-    bits_len: u32,
+    bits_len: u64,
     bits: BitVec<u8>,
-    block_size: u32,
+    block_size: u64,
     heap: Vec<MinMaxNode>,
 }
 
 impl MinMax {
-    pub fn new(bits: BitVec<u8>, block_size: u32) -> MinMax {
-        let bits_len = bits.len() as u32;
+    pub fn new(bits: BitVec<u8>, block_size: u64) -> MinMax {
+        let bits_len = bits.len();
 
         let mut number_of_blocks = 0;
 
@@ -25,7 +25,7 @@ impl MinMax {
             number_of_blocks = bits_len / block_size;
         }
 
-        let max_blocks = 2u32.pow((number_of_blocks as f64).log2().ceil() as u32);
+        let max_blocks = 2u64.pow((number_of_blocks as f64).log2().ceil() as u32);
 
         let heap_size = max_blocks * 2 - 1;
 
@@ -41,17 +41,40 @@ impl MinMax {
         let mut max_excess = 0;
 
         for bit_index in 0..bits_len {
-            // Werte berechnen:
-            if bits.get_bit(bit_index as u64) {
-                excess += 1;
+            if number_min_excess == 0 {
+                //check if this is a new block
+                if bits[bit_index] {
+                    //initialize the values for the first bit of a block
+                    excess = 1;
+                    min_excess = 1;
+                    number_min_excess = 1;
+                    max_excess = 1;
+                } else {
+                    excess = -1;
+                    min_excess = -1;
+                    number_min_excess = 1;
+                    max_excess = -1;
+                }
             } else {
-                excess -= 1;
+                if !bits[bit_index] {
+                    //change the excess depending on the bit
+                    excess = excess - 1;
+                    if excess == min_excess {
+                        number_min_excess += 1;
+                    } else if excess < min_excess {
+                        min_excess = excess;
+                        number_min_excess = 1;
+                    }
+                } else {
+                    excess += 1;
+                    if excess > max_excess {
+                        max_excess = excess;
+                    }
+                }
             }
-            if excess > max_excess {
-                max_excess = excess;
-            }
-            if bit_index != 0 && (bit_index % block_size) - 1 == 0 {
-                //Werte in Node speichern
+            if (bit_index + 1) % block_size == 0 {
+                //check if it is the end of a block
+                //save values as Node in a heap
                 heap.get_mut(heap_index).unwrap().set_values(
                     &excess,
                     &min_excess,
@@ -59,6 +82,7 @@ impl MinMax {
                     &max_excess,
                 );
                 heap_index += 1;
+                //set values beack to zero
                 excess = 0;
                 min_excess = 0;
                 number_min_excess = 0;
