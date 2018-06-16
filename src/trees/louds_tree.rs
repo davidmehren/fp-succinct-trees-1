@@ -15,7 +15,7 @@ pub struct LOUDSTree {
 }
 
 impl PartialEq for LOUDSTree {
-    fn eq(&self, other: &LOUDSTree) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.bits == other.bits
     }
 }
@@ -76,7 +76,7 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
-    fn from_id_tree(tree: Tree<i32>) -> Result<LOUDSTree, Error> {
+    fn from_id_tree(tree: Tree<i32>) -> Result<Self, Error> {
         unimplemented!()
     }
 }
@@ -117,12 +117,12 @@ impl LOUDSTree {
             .select_1(self.rankselect.rank_0(index - 1)?)?;
         Some(y - self.prev_0(y)?)
     }
-    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<LOUDSTree, InvalidBitvecError> {
+    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<Self, InvalidBitvecError> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(InvalidBitvecError);
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
-        Ok(LOUDSTree {
+        Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
         })
