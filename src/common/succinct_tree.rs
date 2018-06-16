@@ -37,7 +37,7 @@ pub trait SuccinctTree<T>: Debug {
         true
     }
 
-    fn calc_superblock_size(length: u64) -> f32 {
-        ((length as f32).log2().powi(2) / 32.0).ceil()
+    fn calc_superblock_size(length: u64) -> f64 {
+        ((length as f64).log2().powi(2) / 32.0).ceil()
     }
 }

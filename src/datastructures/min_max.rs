@@ -5,13 +5,10 @@
 
 //! Range-Min-Max data structure based on Cordova and Navarro (2016)
 
-use bincode::{deserialize, serialize};
-use bv::{BitVec, Bits};
+use bv::BitVec;
 use common::errors::NodeError;
 use std::cmp;
 use std::f64;
-use std::fmt::Debug;
-use std::ops::Deref;
 
 /// A Range-Min-Max data structure
 #[derive(Serialize, Deserialize)]
@@ -23,16 +20,14 @@ pub struct MinMax {
 }
 
 impl MinMax {
-    pub fn new(bits: BitVec<u8>, block_size: u64) -> MinMax {
+    pub fn new(bits: BitVec<u8>, block_size: u64) -> Self {
         let bits_len = bits.len();
 
-        let mut number_of_blocks = 0;
-
-        if bits_len % block_size != 0 {
-            number_of_blocks = bits_len / block_size + 1;
+        let number_of_blocks = if bits_len % block_size != 0 {
+            bits_len / block_size + 1
         } else {
-            number_of_blocks = bits_len / block_size;
-        }
+            bits_len / block_size
+        };
 
         let max_blocks = 2u64.pow((number_of_blocks as f64).log2().ceil() as u32);
 
@@ -67,7 +62,7 @@ impl MinMax {
             } else {
                 if !bits[bit_index] {
                     //change the excess depending on the bit
-                    excess = excess - 1;
+                    excess -= 1;
                     if excess == min_excess {
                         number_min_excess += 1;
                     } else if excess < min_excess {
@@ -84,12 +79,7 @@ impl MinMax {
             if (bit_index + 1) % block_size == 0 {
                 //check if it is the end of a block
                 //save values as Node in a heap
-                heap.get_mut(heap_index).unwrap().set_values(
-                    &excess,
-                    &min_excess,
-                    &number_min_excess,
-                    &max_excess,
-                );
+                heap[heap_index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
                 heap_index += 1;
                 //set values beack to zero
                 excess = 0;
@@ -123,7 +113,7 @@ impl MinMax {
             }
         }
 
-        MinMax {
+        Self {
             bits_len,
             bits,
             block_size,

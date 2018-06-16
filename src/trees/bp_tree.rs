@@ -2,6 +2,7 @@ use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::Bits;
+use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
 use datastructures::min_max::MinMax;
@@ -15,7 +16,6 @@ use std::fmt::Formatter;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use common::errors::InvalidBitvecError;
 
 #[derive(Serialize, Deserialize)]
 pub struct BPTree {
@@ -25,7 +25,7 @@ pub struct BPTree {
 }
 
 impl PartialEq for BPTree {
-    fn eq(&self, other: &BPTree) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.bits == other.bits
     }
 }
@@ -85,15 +85,16 @@ impl SuccinctTree<BPTree> for BPTree {
     /// * `tree` The IDTree which should be converted
     /// # Errors
     ///
-    fn from_id_tree(tree: Tree<i32>) -> Result<BPTree, Error> {
-        let mut bitvec = BitVec::new();
-        if tree.height() > 0 {
-            let root_id: &NodeId = tree.root_node_id().unwrap();
-            bitvec = BPTree::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree);
-        }
+    fn from_id_tree(tree: Tree<i32>) -> Result<Self, Error> {
+        let root_id: &NodeId = tree.root_node_id().unwrap();
+        let bitvec = if tree.height() > 0 {
+            Self::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree)
+        } else {
+            BitVec::new()
+        };
 
-        let superblock_size = BPTree::calc_superblock_size(bitvec.len());
-        Ok(BPTree {
+        let superblock_size = Self::calc_superblock_size(bitvec.len());
+        Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
@@ -171,9 +172,9 @@ impl BPTree {
 
     /// Returns a () - BPTree
     ///
-    pub fn stub_create() -> BPTree {
+    pub fn stub_create() -> Self {
         let bitvec: BitVec<u8> = bit_vec![true, false];
-        BPTree {
+        Self {
             rankselect: RankSelect::new(bitvec.clone(), 1),
             minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
@@ -184,21 +185,21 @@ impl BPTree {
     /// # Arguments
     /// * `bitvec` The BitVec for the specified BPTree
     ///
-    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<BPTree, InvalidBitvecError> {
+    pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<Self, InvalidBitvecError> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(InvalidBitvecError);
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
-        Ok(BPTree {
+        Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
             bits: bitvec,
         })
     }
 
-    pub fn from_file(path: String) -> Result<BPTree, Error> {
+    pub fn from_file(path: String) -> Result<Self, Error> {
         let file = fs::read(path).context("Could not read saved tree.")?;
-        let tree: BPTree = deserialize(&file).context("Error while deserializing tree.")?;
+        let tree: Self = deserialize(&file).context("Error while deserializing tree.")?;
         Ok(tree)
     }
 
@@ -213,7 +214,7 @@ impl BPTree {
         let mut bitvec = BitVec::new();
         bitvec.push(true);
         for child in node.children() {
-            let bitvec_rec = BPTree::traverse_id_tree_for_bitvec(tree.get(child).unwrap(), &tree);
+            let bitvec_rec = Self::traverse_id_tree_for_bitvec(tree.get(child).unwrap(), &tree);
             for bit in 0..bitvec_rec.len() {
                 bitvec.push(bitvec_rec.get_bit(bit));
             }
@@ -243,7 +244,10 @@ mod tests {
     #[test]
     fn new_from_bitvec_invalid() {
         let bitvec = bit_vec!(false, false);
-        assert_eq!(BPTree::from_bitvec(bitvec.clone()).unwrap_err(), InvalidBitvecError);
+        assert_eq!(
+            BPTree::from_bitvec(bitvec.clone()).unwrap_err(),
+            InvalidBitvecError
+        );
     }
 
     #[test]
