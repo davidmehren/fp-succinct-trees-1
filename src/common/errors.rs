@@ -2,7 +2,6 @@
 #[fail(display = "Supplied an invalid index")]
 pub struct IndexOutOfBoundsError;
 
-
 #[derive(Fail, Debug, PartialEq)]
 #[fail(display = "The supplied bitvector is not valid for this tree.")]
 pub struct InvalidBitvecError;

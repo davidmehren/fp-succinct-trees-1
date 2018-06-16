@@ -1,13 +1,12 @@
-use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, Bits};
+use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
-use failure::{Error, ResultExt};
+use failure::Error;
 use id_tree::Tree;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use common::errors::InvalidBitvecError;
 
 #[derive(Serialize, Deserialize)]
 pub struct LOUDSTree {
@@ -29,9 +28,10 @@ impl Debug for LOUDSTree {
 
 impl SuccinctTree<LOUDSTree> for LOUDSTree {
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
-        if index >= self.bits.bit_len() || index <= 0 {
-            Err(NodeError::NotANodeError)
-        } else if !self.bits.get_bit(index) && self.bits.get_bit(index - 1) {
+        if index >= self.bits.bit_len()
+            || index == 0
+            || (!self.bits.get_bit(index) && self.bits.get_bit(index - 1))
+            {
             Err(NodeError::NotANodeError)
         } else {
             Ok(!self.bits.get_bit(index))
@@ -103,8 +103,13 @@ impl LOUDSTree {
                 .select_0(self.rankselect.rank_1(index)? + n - 2)? + 1,
         )
     }
-    pub fn degree(&self, index: u64) -> Option<u64> {
-        Some(self.next_0(index)? - index)
+    pub fn degree(&self, index: u64) -> Result<u64, NodeError> {
+        if self.is_leaf(index)? {
+            Ok(0)
+        } else {
+            // We could just unwrap() here, because invalid indices have been dealt with in is_leaf()
+            Ok(self.next_0(index).ok_or(NodeError::NotANodeError)? - index)
+        }
     }
     pub fn child_rank(&self, index: u64) -> Option<u64> {
         let y = self
@@ -143,7 +148,9 @@ mod tests {
     fn new_from_bitvec_invalid() {
         let bitvec = bit_vec![true, true];
         assert_eq!(
-            LOUDSTree::from_bitvec(bitvec.clone()).unwrap_err(), InvalidBitvecError);
+            LOUDSTree::from_bitvec(bitvec.clone()).unwrap_err(),
+            InvalidBitvecError
+        );
     }
 
     #[test]
@@ -229,4 +236,13 @@ mod tests {
         );
     }
 
+    #[test]
+    fn degree() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.degree(1).unwrap(), 3);
+        assert_eq!(tree.degree(5).unwrap(), 1);
+        assert_eq!(tree.degree(9).unwrap(), 0);
+    }
 }
