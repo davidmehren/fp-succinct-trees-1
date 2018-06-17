@@ -22,7 +22,7 @@ impl PartialEq for LOUDSTree {
 
 impl Debug for LOUDSTree {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
+        write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.bits)
     }
 }
 
@@ -244,5 +244,35 @@ mod tests {
         assert_eq!(tree.degree(1).unwrap(), 3);
         assert_eq!(tree.degree(5).unwrap(), 1);
         assert_eq!(tree.degree(9).unwrap(), 0);
+    }
+
+    #[test]
+    fn child_rank() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.child_rank(9).unwrap(), 2);
+        assert_eq!(tree.child_rank(7).unwrap(), 1);
+        assert_eq!(tree.child_rank(5).unwrap(), 0);
+    }
+
+    #[test]
+    fn print() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        println!("{:?}", tree)
+    }
+
+    #[test]
+    fn partial_eq() {
+        let bitvec_a =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let bitvec_b = bit_vec![true, true, false, false];
+        let tree_a = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
+        let tree_b = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
+        let tree_c = LOUDSTree::from_bitvec(bitvec_b.clone()).unwrap();
+        assert_eq!(tree_a, tree_b);
+        assert_ne!(tree_a, tree_c)
     }
 }
