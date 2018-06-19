@@ -7,6 +7,10 @@ pub struct IndexOutOfBoundsError;
 pub struct InvalidBitvecError;
 
 #[derive(Fail, Debug, PartialEq)]
+#[fail(display = "The supplied tree does not contain any nodes.")]
+pub struct EmptyTreeError;
+
+#[derive(Fail, Debug, PartialEq)]
 pub enum NodeError {
     #[fail(display = "The supplied index does not reference a node.")]
     NotANodeError,

@@ -1,5 +1,6 @@
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, Bits};
+use common::errors::EmptyTreeError;
 use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
@@ -76,7 +77,7 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
-    fn from_id_tree(tree: Tree<i32>) -> Result<Self, Error> {
+    fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
         unimplemented!()
     }
 }

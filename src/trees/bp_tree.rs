@@ -2,6 +2,7 @@ use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::Bits;
+use common::errors::EmptyTreeError;
 use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
@@ -85,12 +86,12 @@ impl SuccinctTree<BPTree> for BPTree {
     /// * `tree` The IDTree which should be converted
     /// # Errors
     ///
-    fn from_id_tree(tree: Tree<i32>) -> Result<Self, Error> {
-        let root_id: &NodeId = tree.root_node_id().unwrap();
+    fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
         let bitvec = if tree.height() > 0 {
+            let root_id: &NodeId = tree.root_node_id().unwrap();
             Self::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree)
         } else {
-            BitVec::new()
+            return Err(EmptyTreeError);
         };
 
         let superblock_size = Self::calc_superblock_size(bitvec.len());
@@ -406,8 +407,13 @@ mod tests {
         let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
-
         let tree = BPTree::from_id_tree(id_tree).unwrap_or(BPTree::stub_create());
         assert_eq!(tree, expected_tree);
+    }
+
+    #[test]
+    fn from_empty_id_tree() {
+        let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        assert_eq!(BPTree::from_id_tree(id_tree).unwrap_err(), EmptyTreeError)
     }
 }
