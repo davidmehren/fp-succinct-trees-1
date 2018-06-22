@@ -1,13 +1,17 @@
+use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, Bits};
 use common::errors::EmptyTreeError;
 use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
 use common::succinct_tree::SuccinctTree;
-use failure::Error;
+use failure::{Error, ResultExt};
 use id_tree::Tree;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
+use std::fs;
+use std::fs::File;
+use std::io::Write;
 
 #[derive(Serialize, Deserialize)]
 pub struct LOUDSTree {
@@ -127,6 +131,19 @@ impl LOUDSTree {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             bits: bitvec,
         })
+    }
+
+    pub fn from_file(path: String) -> Result<Self, Error> {
+        let file = fs::read(path).context("Could not read saved tree.")?;
+        let tree: Self = deserialize(&file).context("Error while deserializing tree.")?;
+        Ok(tree)
+    }
+
+    pub fn save_to(&self, path: String) -> Result<(), Error> {
+        let encoded = serialize(&self).context("Error while serializing tree.")?;
+        let mut file = File::create(path).context("Could not save tree.")?;
+        file.write_all(&encoded)?;
+        Ok(())
     }
 }
 
@@ -276,5 +293,25 @@ mod tests {
         let tree_c = LOUDSTree::from_bitvec(bitvec_b.clone()).unwrap();
         assert_eq!(tree_a, tree_b);
         assert_ne!(tree_a, tree_c)
+    }
+
+    #[test]
+    fn save_load() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        tree.save_to("testdata/loudstree.testdata".to_string())
+            .unwrap();
+        let result = LOUDSTree::from_file("testdata/loudstree.testdata".to_string()).unwrap();
+        assert_eq!(
+            tree, result,
+            "The loaded tree is not equal to the original one."
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Error while deserializing tree.")]
+    fn load_invalid() {
+        LOUDSTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
     }
 }
