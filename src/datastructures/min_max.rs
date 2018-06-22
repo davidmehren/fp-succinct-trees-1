@@ -134,7 +134,25 @@ impl MinMax {
     }
 
     pub fn excess(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!();
+        let block_number = index / self.block_size;
+        let position_in_block = index % self.block_size;
+        let mut pre_excess = 0;
+        let mut block_rank: u64 = 0;
+        let mut j = block_number;
+        while j > 0 {
+            if (j % 2) == 0 {
+                j = (j - 1) / 2;
+                pre_excess = self.heap[(2 * j + 1) as usize].excess;
+            } else {
+                j = (j - 1) / 2;
+            }
+        }
+        for k in (block_number * self.block_size)..index {
+            if self.bits[k] {
+                block_rank += 1;
+            }
+        }
+        Ok(pre_excess as u64 + (2 * block_rank - position_in_block))
     }
 
     pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {

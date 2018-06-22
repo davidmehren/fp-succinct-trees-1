@@ -32,7 +32,7 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         if index >= self.bits.bit_len()
             || index == 0
             || (!self.bits.get_bit(index) && self.bits.get_bit(index - 1))
-            {
+        {
             Err(NodeError::NotANodeError)
         } else {
             Ok(!self.bits.get_bit(index))
