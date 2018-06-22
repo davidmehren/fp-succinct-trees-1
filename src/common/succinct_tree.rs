@@ -1,7 +1,6 @@
 use bv::{BitVec, Bits};
 use common::errors::EmptyTreeError;
 use common::errors::NodeError;
-use failure::Error;
 use id_tree::Tree;
 use std::fmt::Debug;
 

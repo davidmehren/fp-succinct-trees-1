@@ -89,7 +89,7 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         let mut bitvec: BitVec<u8> = BitVec::new_fill(true, 1);
         for node in tree.traverse_level_order(root).unwrap() {
             let child_count = node.children().len();
-            for i in 0..child_count {
+            for _ in 0..child_count {
                 bitvec.push(true);
             }
             bitvec.push(false);
@@ -155,7 +155,6 @@ impl LOUDSTree {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bv::BitsMut;
     use id_tree::InsertBehavior::{AsRoot, UnderNode};
     use id_tree::{Node, NodeId, TreeBuilder};
 
@@ -337,7 +336,7 @@ mod tests {
 
     #[test]
     fn from_empty_id_tree() {
-        let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         assert_eq!(
             LOUDSTree::from_id_tree(id_tree).unwrap_err(),
             EmptyTreeError

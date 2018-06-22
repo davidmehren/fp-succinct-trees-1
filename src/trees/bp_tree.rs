@@ -211,7 +211,7 @@ impl BPTree {
         Ok(())
     }
 
-    fn traverse_id_tree_for_bitvec(node: &Node<i32>, ref tree: &Tree<i32>) -> BitVec<u8> {
+    fn traverse_id_tree_for_bitvec(node: &Node<i32>, tree: &Tree<i32>) -> BitVec<u8> {
         let mut bitvec = BitVec::new();
         bitvec.push(true);
         for child in node.children() {
@@ -413,7 +413,7 @@ mod tests {
 
     #[test]
     fn from_empty_id_tree() {
-        let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         assert_eq!(BPTree::from_id_tree(id_tree).unwrap_err(), EmptyTreeError)
     }
 
