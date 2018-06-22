@@ -15,36 +15,35 @@ use std::io::Write;
 
 #[derive(Serialize, Deserialize)]
 pub struct LOUDSTree {
-    bits: BitVec<u8>,
     rankselect: RankSelect,
 }
 
 impl PartialEq for LOUDSTree {
     fn eq(&self, other: &Self) -> bool {
-        self.bits == other.bits
+        self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
 impl Debug for LOUDSTree {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.bits)
+        write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
 impl SuccinctTree<LOUDSTree> for LOUDSTree {
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
-        if index >= self.bits.bit_len()
+        if index >= self.rankselect.bits().bit_len()
             || index == 0
-            || (!self.bits.get_bit(index) && self.bits.get_bit(index - 1))
+            || (!self.rankselect.bits().get_bit(index) && self.rankselect.bits().get_bit(index - 1))
         {
             Err(NodeError::NotANodeError)
         } else {
-            Ok(!self.bits.get_bit(index))
+            Ok(!self.rankselect.bits().get_bit(index))
         }
     }
 
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
-        if index >= self.bits.bit_len() || index == 0 {
+        if index >= self.rankselect.bits().bit_len() || index == 0 {
             Err(NodeError::NotANodeError)
         } else if index == 1 {
             Err(NodeError::RootNodeError)
@@ -134,7 +133,6 @@ impl LOUDSTree {
         let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
-            bits: bitvec,
         })
     }
 
@@ -163,7 +161,8 @@ mod tests {
         let bitvec = bit_vec![true, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(
-            tree.bits, bitvec,
+            *tree.rankselect.bits(),
+            bitvec,
             "BPTree seems to somehow change the bitvector it was created with."
         );
     }
