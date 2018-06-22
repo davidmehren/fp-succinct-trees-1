@@ -155,6 +155,65 @@ impl MinMax {
         Ok(pre_excess as u64 + (2 * block_rank - position_in_block))
     }
 
+    fn fwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
+        let end_of_block = (index / self.block_size) + self.block_size;
+        let index_excess = self.excess(index);
+        let mut current_excess = 0;
+        let mut j = index;
+        let mut found = false;
+        while !found && j < end_of_block {
+            j += 1;
+            if self.bits[j] {
+                current_excess += 1;
+            } else {
+                current_excess -= 1;
+            }
+            if current_excess == diff {
+                found = true;
+            }
+        }
+        let mut current_diff = diff - current_excess;
+        //bottom up search
+        let mut current_node = (self.heap.len() as u64 / 2 + index / self.block_size) as usize;
+        let mut top_down_search = false;
+        while !top_down_search && current_node != 0 {
+            //if current_node is right child go to parent
+            if current_node % 2 == 0 {
+                current_node = (current_node - 1) / 2;
+            } else {
+                current_node += 1;
+                if current_diff <= self.heap[current_node].max_excess
+                    && current_diff >= self.heap[current_node].min_excess
+                {
+                    top_down_search = true;
+                } else {
+                    //current_diff is not in the right child range. go to parent.
+                    current_diff = current_diff - self.heap[current_node as usize].excess;
+                    current_node = (current_node - 1) / 2;
+                }
+            }
+        }
+        //top down search
+        while !found && top_down_search{
+            if current_node <= self.heap.len() / 2 {
+                //todo: durchsuche
+            } else {
+                let left_child = 2 * current_node + 1;
+                let right_child = 2 * current_node + 2;
+                if current_diff <= self.heap[left_child].max_excess
+                    && current_diff >= self.heap[left_child].min_excess
+                    {
+                        current_node = left_child;
+                    } else {
+                    current_node = right_child;
+                    current_diff = current_diff - self.heap[left_child].excess;
+                }
+            }
+        }
+
+        Ok(3)
+    }
+
     pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
         unimplemented!();
     }
@@ -166,19 +225,19 @@ impl MinMax {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct MinMaxNode {
-    excess: i32,
-    min_excess: i32,
+    excess: i64,
+    min_excess: i64,
     number_min_excess: u64,
-    max_excess: i32,
+    max_excess: i64,
 }
 
 impl MinMaxNode {
     pub fn set_values(
         &mut self,
-        excess: &i32,
-        min_excess: &i32,
+        excess: &i64,
+        min_excess: &i64,
         number_min_excess: &u64,
-        max_excess: &i32,
+        max_excess: &i64,
     ) {
         self.excess = *excess;
         self.min_excess = *min_excess;
@@ -224,8 +283,7 @@ impl MinMaxNode {
 //    #[test]
 //    fn test_enclose() {
 //        let bits = bit_vec![
-//            true, true, true, false, true, false, true, true, false, false, false, true, false,ccccccfgbjiebkrnlufdricijilvgudgnenievucdlnn
-
+//            true, true, true, false, true, false, true, true, false, false, false, true, false,
 //            true, true, true, false, true, false, false, false, false
 //        ];
 //        let min_max = MinMax::new(bits, 4);
