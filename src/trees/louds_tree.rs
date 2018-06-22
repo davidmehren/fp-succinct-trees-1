@@ -82,7 +82,19 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
     }
 
     fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
-        unimplemented!()
+        let root = match tree.root_node_id() {
+            Some(id) => id,
+            None => return Err(EmptyTreeError)
+        };
+        let mut bitvec:BitVec<u8> = BitVec::new_fill(true, 1);
+        for node in tree.traverse_level_order(root).unwrap() {
+            let child_count = node.children().len();
+            for i in 0..child_count {
+                bitvec.push(true);
+            }
+            bitvec.push(false);
+        }
+        Ok(Self::from_bitvec(bitvec).unwrap())
     }
 }
 
@@ -151,6 +163,8 @@ impl LOUDSTree {
 mod tests {
     use super::*;
     use bv::BitsMut;
+    use id_tree::{TreeBuilder, Node, NodeId};
+    use id_tree::InsertBehavior::{AsRoot, UnderNode};
 
     #[test]
     fn new_from_bitvec() {
@@ -313,5 +327,19 @@ mod tests {
     #[should_panic(expected = "Error while deserializing tree.")]
     fn load_invalid() {
         LOUDSTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
+    }
+
+    #[test]
+    fn from_id_tree() {
+        let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree.insert(Node::new(0), AsRoot).unwrap();
+        let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
+        let tree = LOUDSTree::from_id_tree(id_tree).unwrap();
+        let bitvec = bit_vec![true, true, true, false, true, false, false, false];
+        let other_tree = LOUDSTree::from_bitvec(bitvec).unwrap();
+        assert_eq!(tree, other_tree)
+
     }
 }
