@@ -262,7 +262,8 @@ mod tests {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
         let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
-        println!("{:?}", tree)
+        let str = format!("{:?}", tree);
+        assert_eq!(str, "LOUDSTree\n  { bits: bit_vec![true, true, true, true, false, true, false, true, false, false, false, false] }")
     }
 
     #[test]

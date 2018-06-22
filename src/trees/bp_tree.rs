@@ -105,7 +105,7 @@ impl SuccinctTree<BPTree> for BPTree {
 
 impl Debug for BPTree {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        self.bits.fmt(f)
+        write!(f, "BPTree\n  {{ bits: {:?} }}", self.bits)
     }
 }
 
@@ -415,5 +415,16 @@ mod tests {
     fn from_empty_id_tree() {
         let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         assert_eq!(BPTree::from_id_tree(id_tree).unwrap_err(), EmptyTreeError)
+    }
+
+    #[test]
+    fn print() {
+        let bitvec = bit_vec!(true, true, false, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        let str = format!("{:?}", tree);
+        assert_eq!(
+            str,
+            "BPTree\n  { bits: bit_vec![true, true, false, true, false, false] }"
+        )
     }
 }
