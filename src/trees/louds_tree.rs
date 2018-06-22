@@ -1,9 +1,7 @@
 use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, Bits};
-use common::errors::EmptyTreeError;
-use common::errors::InvalidBitvecError;
-use common::errors::NodeError;
+use common::errors::{EmptyTreeError, InvalidBitvecError, NodeError};
 use common::succinct_tree::SuccinctTree;
 use failure::{Error, ResultExt};
 use id_tree::Tree;
@@ -31,6 +29,11 @@ impl Debug for LOUDSTree {
 }
 
 impl SuccinctTree<LOUDSTree> for LOUDSTree {
+    /// Checks if a node is a leaf.
+    /// # Arguments
+    /// * `index` The index of the node to check
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError> {
         if index >= self.rankselect.bits().bit_len()
             || index == 0
@@ -42,6 +45,12 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
+    /// Returns the index of the parent of this node
+    /// # Arguments
+    /// * `index` The index of the node to get the parent of.
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    /// * `HasNoParentError` If `index` references the root node.
     fn parent(&self, index: u64) -> Result<u64, NodeError> {
         if index >= self.rankselect.bits().bit_len() || index == 0 {
             Err(NodeError::NotANodeError)
@@ -58,6 +67,12 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
+    /// Returns the index of the nodes first child.
+    /// # Arguments
+    /// * `index` The index of the node to get the first child of.
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    /// * `NotAParentError` If `index` references a leaf.
     fn first_child(&self, index: u64) -> Result<u64, NodeError> {
         if self.is_leaf(index)? {
             Err(NodeError::NotAParentError)
@@ -66,6 +81,11 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
+    /// Returns the index of the next sibling
+    /// # Arguments
+    /// * `index` The index of the node to get the next sibling of.
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         let parent_a = self.parent(index)?;
         let sibling = self
@@ -80,6 +100,11 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
     }
 
+    /// Constructs a LOUDSTree from a IDTree
+    /// # Arguments
+    /// * `tree` The IDTree which should be converted
+    /// # Errors
+    /// * `EmptyTreeError` If `tree` does not contain any nodes.
     fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
         let root = match tree.root_node_id() {
             Some(id) => id,

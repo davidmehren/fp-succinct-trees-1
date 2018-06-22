@@ -85,7 +85,7 @@ impl SuccinctTree<BPTree> for BPTree {
     /// # Arguments
     /// * `tree` The IDTree which should be converted
     /// # Errors
-    ///
+    /// * `EmptyTreeError` If `tree` does not contain any nodes.
     fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
         let bitvec = if tree.height() > 0 {
             let root_id: &NodeId = tree.root_node_id().unwrap();
