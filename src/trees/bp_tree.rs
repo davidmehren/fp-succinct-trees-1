@@ -198,12 +198,20 @@ impl BPTree {
         })
     }
 
+    /// Deserializes a BPTree from a given file
+    /// # Arguments
+    /// * `path` The path of the file to deserialize
+    ///
     pub fn from_file(path: String) -> Result<Self, Error> {
         let file = fs::read(path).context("Could not read saved tree.")?;
         let tree: Self = deserialize(&file).context("Error while deserializing tree.")?;
         Ok(tree)
     }
 
+    /// Serializes a BPTree to a file
+    /// # Arguments
+    /// * `path` The path of the file to save to. Will be overwritten if it exists.
+    ///
     pub fn save_to(&self, path: String) -> Result<(), Error> {
         let encoded = serialize(&self).context("Error while serializing tree.")?;
         let mut file = File::create(path).context("Could not save tree.")?;
@@ -253,7 +261,8 @@ mod tests {
 
     #[test]
     fn save_load() {
-        let tree = BPTree::stub_create();
+        let bitvec = bit_vec!(true, true, false, false);
+        let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
         tree.save_to("testdata/bptree.testdata".to_string())
             .unwrap();
         let result = BPTree::from_file("testdata/bptree.testdata".to_string()).unwrap();
@@ -407,7 +416,7 @@ mod tests {
         let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
-        let tree = BPTree::from_id_tree(id_tree).unwrap_or(BPTree::stub_create());
+        let tree = BPTree::from_id_tree(id_tree).unwrap();
         assert_eq!(tree, expected_tree);
     }
 
