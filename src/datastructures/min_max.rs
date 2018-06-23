@@ -219,6 +219,23 @@ impl MinMax {
             }
         }
 
+        position_in_block = (current_node - ((self.heap.len() -1) / 2)) as u64 * self.block_size;
+        let block_start = position_in_block;
+        let end_of_target_block = block_start + self.block_size;
+        while !found && block_search && position_in_block < end_of_target_block{
+            if self.bits[position_in_block] {
+                current_diff += 1;
+            } else {
+                current_diff -= 1;
+            }
+            if current_diff == 0 {
+                found = true;
+            } else {
+                position_in_block += 1;
+            }
+        }
+
+        Ok(position_in_block);
         position_in_block = (current_node - ((self.heap.len() - 1) / 2)) as u64 * self.block_size;
         let block_start = position_in_block;
         let end_of_target_block = block_start + self.block_size;
