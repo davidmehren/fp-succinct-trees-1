@@ -33,7 +33,7 @@ impl MinMax {
 
         let heap_size = max_blocks * 2 - 1;
 
-        let number_of_nodes = heap_size - max_blocks + number_of_blocks; // TODO vielleicht unnötig
+        let number_of_nodes = heap_size - max_blocks + number_of_blocks; // TODO probably unnecessary
 
         let mut heap = vec![MinMaxNode::default(); heap_size as usize];
 
@@ -152,6 +152,9 @@ impl MinMax {
                 block_rank += 1;
             }
         }
+        println!("2* block rank: {}", 2 * block_rank); // TODO test
+        println!("position in block: {}", position_in_block); // TODO test
+        // TODO 2 * block_rank - position_in_block must not be < 0!
         Ok(pre_excess as u64 + (2 * block_rank - position_in_block))
     }
 
@@ -219,6 +222,13 @@ impl MinMax {
             }
         }
 
+        println!("current_node: {}", current_node); // TODO test
+        println!("heap.len() - 1: {}", self.heap.len() - 1); // TODO test
+        println!(
+            "interim_value: {}",
+            current_node as i64 - ((self.heap.len() - 1) / 2) as i64
+        ); // TODO test
+           // TODO position in block must not be < 0!
         position_in_block = (current_node - ((self.heap.len() - 1) / 2)) as u64 * self.block_size;
         let block_start = position_in_block;
         let end_of_target_block = block_start + self.block_size;
@@ -238,13 +248,16 @@ impl MinMax {
         Ok(position_in_block)
     }
 
-    pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
-        //fwd_search(&self, index, 0)
+    fn bwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
         unimplemented!();
     }
 
+    pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
+        self.fwd_search(index, 0)
+    }
+
     pub fn enclose(&self, index: u64) -> Result<u64, NodeError> {
-        unimplemented!();
+        self.bwd_search(index, 2)
     }
 }
 
@@ -271,49 +284,53 @@ impl MinMaxNode {
     }
 }
 
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//    use bv::BitVec;
-//    use bv::Bits;
-//
-//    #[test]
-//    fn test_min_max() {
-//        let bits = bit_vec![
-//            true, true, true, false, true, false, true, true, false, false, false, true, false,
-//            true, true, true, false, true, false, false, false, false
-//        ];
-//        let min_max = MinMax::new(bits, 4);
-//        assert_eq!(min_max.excess(21).unwrap(), 0);
-//        assert_eq!(min_max.excess(7).unwrap(), 4);
-//        // TODO: Werden schon ungültige index-werte zurückgewiesen?
-//    }
-//
-//    #[test]
-//    fn test_excess() {
-//        let bits = bit_vec![true, false];
-//        let min_max = MinMax::new(bits, 2);
-//        assert_eq!(min_max.excess(0).unwrap(), 1);
-//        assert_eq!(min_max.excess(1).unwrap(), 0);
-//    }
-//
-//    #[test]
-//    fn test_find_close() {
-//        let bits = bit_vec![true, true, false, false];
-//        let min_max = MinMax::new(bits, 2);
-//        assert_eq!(min_max.find_close(0).unwrap(), 3);
-//        assert_eq!(min_max.find_close(1).unwrap(), 2);
-//    }
-//
-//    #[test]
-//    fn test_enclose() {
-//        let bits = bit_vec![
-//            true, true, true, false, true, false, true, true, false, false, false, true, false,
-//            true, true, true, false, true, false, false, false, false
-//        ];
-//        let min_max = MinMax::new(bits, 4);
-//        assert_eq!(min_max.enclose(4).unwrap(), 1);
-//        assert_eq!(min_max.enclose(6).unwrap(), 1);
-//    }
-//
-//}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bv::BitVec;
+    use bv::Bits;
+
+    #[test]
+    #[ignore]
+    fn test_min_max() {
+        let bits = bit_vec![
+            true, true, true, false, true, false, true, true, false, false, false, true, false,
+            true, true, true, false, true, false, false, false, false
+        ];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.excess(21).unwrap(), 0);
+        assert_eq!(min_max.excess(7).unwrap(), 4);
+        // TODO: Werden schon ungültige index-werte zurückgewiesen?
+    }
+
+    #[test]
+    #[ignore]
+    fn test_excess() {
+        let bits = bit_vec![true, false];
+        let min_max = MinMax::new(bits, 2);
+        assert_eq!(min_max.excess(0).unwrap(), 1);
+        assert_eq!(min_max.excess(1).unwrap(), 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_find_close() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 2);
+        assert_eq!(min_max.find_close(0).unwrap(), 3);
+        assert_eq!(min_max.find_close(1).unwrap(), 2);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_enclose() {
+        let bits = bit_vec![
+            true, true, true, false, true, false, true, true, false, false, false, true, false,
+            true, true, true, false, true, false, false, false, false
+        ];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.enclose(4).unwrap(), 1);
+        assert_eq!(min_max.enclose(6).unwrap(), 1);
+    }
+
+}
