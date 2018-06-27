@@ -88,28 +88,48 @@ impl MinMax {
                 max_excess = 0;
             }
         }
-
         if heap_size != 1 {
-            for index in (max_blocks - 2)..=0 {
-                let left_child = &heap[(2 * index + 1) as usize];
-                let right_child = &heap[(2 * index + 2) as usize];
-                excess = left_child.excess + right_child.excess;
-                min_excess = cmp::min(
-                    left_child.excess + right_child.min_excess,
-                    left_child.min_excess,
-                );
-                if left_child.excess + right_child.min_excess == left_child.min_excess {
-                    number_min_excess =
-                        left_child.number_min_excess + right_child.number_min_excess;
-                } else if left_child.excess + right_child.min_excess > left_child.min_excess {
-                    number_min_excess = right_child.number_min_excess;
+            for rev in 0..(heap_size / 2) as u64 {
+                //want to iterate reverted
+                let index = (heap_size / 2 - 1 - rev) as usize;
+                //let left_child = &heap[(2 * index + 1)];
+                //let right_child = &heap[(2 * index + 2)];
+                let left_child = (2 * index + 1) as usize;
+                let right_child = (2 * index + 2) as usize;
+                if heap[right_child].number_min_excess > 0 {
+                    excess = heap[left_child].excess + heap[right_child].excess;
+                    min_excess = cmp::min(
+                        heap[left_child].excess + heap[right_child].min_excess,
+                        heap[left_child].min_excess,
+                    );
+                    if heap[left_child].excess + heap[right_child].min_excess
+                        == heap[left_child].min_excess
+                    {
+                        // if the minimal excesses are equal
+                        number_min_excess = heap[left_child].number_min_excess
+                            + heap[right_child].number_min_excess;
+                    } else if heap[left_child].excess + heap[right_child].min_excess
+                        < heap[left_child].min_excess
+                    {
+                        //if the right min excess is greater
+                        number_min_excess = heap[right_child].number_min_excess;
+                    } else {
+                        //if the left min excess is greater
+                        number_min_excess = heap[left_child].number_min_excess;
+                    }
+                    max_excess = cmp::max(
+                        heap[left_child].excess + heap[right_child].max_excess,
+                        heap[left_child].max_excess,
+                    );
+                    //fill the node
+                    heap[index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
                 } else {
-                    number_min_excess = left_child.number_min_excess;
+                    let excess = heap[left_child].excess;
+                    let min_excess = heap[left_child].min_excess;
+                    let number_min_excess = heap[left_child].number_min_excess;
+                    let max_excess = heap[left_child].max_excess;
+                    heap[index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
                 }
-                max_excess = cmp::max(
-                    left_child.excess + right_child.min_excess,
-                    left_child.min_excess,
-                );
             }
         }
 
@@ -292,28 +312,12 @@ mod tests {
     use bv::Bits;
 
     #[test]
-    #[ignore]
     fn test_min_max_construction() {
         let bits =
             bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
         let min_max = MinMax::new(bits, 4);
         //heap has the correct length
         assert_eq!(min_max.heap.len(), 7);
-        //root node has the correct content
-        assert_eq!(min_max.heap[0].excess, 0);
-        assert_eq!(min_max.heap[0].min_excess, 0);
-        assert_eq!(min_max.heap[0].number_min_excess, 1);
-        assert_eq!(min_max.heap[0].max_excess, 3);
-        //left subtree has the correct content
-        assert_eq!(min_max.heap[1].excess, 2);
-        assert_eq!(min_max.heap[1].min_excess, 1);
-        assert_eq!(min_max.heap[1].number_min_excess, 2);
-        assert_eq!(min_max.heap[1].max_excess, 3);
-        //right subtree has the correct content
-        assert_eq!(min_max.heap[2].excess, -2);
-        assert_eq!(min_max.heap[2].min_excess, -2);
-        assert_eq!(min_max.heap[2].number_min_excess, 1);
-        assert_eq!(min_max.heap[2].max_excess, 1);
         //the blocks contents are correct
         assert_eq!(min_max.heap[3].excess, 2);
         assert_eq!(min_max.heap[3].min_excess, 1);
@@ -334,6 +338,21 @@ mod tests {
         assert_eq!(min_max.heap[6].min_excess, 0);
         assert_eq!(min_max.heap[6].number_min_excess, 0);
         assert_eq!(min_max.heap[6].max_excess, 0);
+        //right subtree has the correct content
+        assert_eq!(min_max.heap[2].excess, -2);
+        assert_eq!(min_max.heap[2].min_excess, -2);
+        assert_eq!(min_max.heap[2].number_min_excess, 1);
+        assert_eq!(min_max.heap[2].max_excess, 1);
+        //left subtree has the correct content
+        assert_eq!(min_max.heap[1].excess, 2);
+        assert_eq!(min_max.heap[1].min_excess, 1);
+        assert_eq!(min_max.heap[1].number_min_excess, 2);
+        assert_eq!(min_max.heap[1].max_excess, 3);
+        //root node has the correct content
+        assert_eq!(min_max.heap[0].excess, 0);
+        assert_eq!(min_max.heap[0].min_excess, 0);
+        assert_eq!(min_max.heap[0].number_min_excess, 1);
+        assert_eq!(min_max.heap[0].max_excess, 3);
     }
 
     #[test]
