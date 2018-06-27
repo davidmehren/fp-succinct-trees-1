@@ -150,12 +150,11 @@ impl MinMax {
         for k in (block_number * self.block_size)..=index {
             if self.bits[k] {
                 block_excess += 1;
-            }
-            else {
+            } else {
                 block_excess -= 1;
             }
         }
-        println!("block excess: {}",  block_excess); // TODO test
+        println!("block excess: {}", block_excess); // TODO test
         println!("pre excess: {}", pre_excess); // TODO test
         Ok((pre_excess + block_excess) as u64)
     }
@@ -291,6 +290,51 @@ mod tests {
     use super::*;
     use bv::BitVec;
     use bv::Bits;
+
+    #[test]
+    #[ignore]
+    fn test_min_max_construction() {
+        let bits =
+            bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
+        let min_max = MinMax::new(bits, 4);
+        //heap has the correct length
+        assert_eq!(min_max.heap.len(), 7);
+        //root node has the correct content
+        assert_eq!(min_max.heap[0].excess, 0);
+        assert_eq!(min_max.heap[0].min_excess, 0);
+        assert_eq!(min_max.heap[0].number_min_excess, 1);
+        assert_eq!(min_max.heap[0].max_excess, 3);
+        //left subtree has the correct content
+        assert_eq!(min_max.heap[1].excess, 2);
+        assert_eq!(min_max.heap[1].min_excess, 1);
+        assert_eq!(min_max.heap[1].number_min_excess, 2);
+        assert_eq!(min_max.heap[1].max_excess, 3);
+        //right subtree has the correct content
+        assert_eq!(min_max.heap[2].excess, -2);
+        assert_eq!(min_max.heap[2].min_excess, -2);
+        assert_eq!(min_max.heap[2].number_min_excess, 1);
+        assert_eq!(min_max.heap[2].max_excess, 1);
+        //the blocks contents are correct
+        assert_eq!(min_max.heap[3].excess, 2);
+        assert_eq!(min_max.heap[3].min_excess, 1);
+        assert_eq!(min_max.heap[3].number_min_excess, 1);
+        assert_eq!(min_max.heap[3].max_excess, 3);
+
+        assert_eq!(min_max.heap[4].excess, 0);
+        assert_eq!(min_max.heap[4].min_excess, -1);
+        assert_eq!(min_max.heap[4].number_min_excess, 1);
+        assert_eq!(min_max.heap[4].max_excess, 1);
+
+        assert_eq!(min_max.heap[5].excess, -2);
+        assert_eq!(min_max.heap[5].min_excess, -2);
+        assert_eq!(min_max.heap[5].number_min_excess, 1);
+        assert_eq!(min_max.heap[5].max_excess, 1);
+
+        assert_eq!(min_max.heap[6].excess, 0);
+        assert_eq!(min_max.heap[6].min_excess, 0);
+        assert_eq!(min_max.heap[6].number_min_excess, 0);
+        assert_eq!(min_max.heap[6].max_excess, 0);
+    }
 
     #[test]
     #[ignore]
