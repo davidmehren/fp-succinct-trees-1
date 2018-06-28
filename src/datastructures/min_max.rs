@@ -174,13 +174,11 @@ impl MinMax {
                 block_excess -= 1;
             }
         }
-        println!("block excess: {}", block_excess); // TODO test
-        println!("pre excess: {}", pre_excess); // TODO test
         Ok((pre_excess + block_excess) as u64)
     }
 
     fn fwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
-        let end_of_block = (index / self.block_size) + self.block_size;
+        let end_of_block = (index / self.block_size)*self.block_size + self.block_size;
         let index_excess = self.excess(index);
         let mut current_excess = 0;
         let mut position_in_block = index;
@@ -189,8 +187,7 @@ impl MinMax {
         let mut bottom_up_search = false;
         let mut top_down_search = false;
         let mut block_search = false;
-
-        while !found && position_in_block < end_of_block {
+        while !found && position_in_block < end_of_block -1 {
             position_in_block += 1;
             if self.bits[position_in_block] {
                 current_excess += 1;
@@ -203,69 +200,62 @@ impl MinMax {
         }
         let mut current_diff = diff - current_excess;
         bottom_up_search = true;
-
-        //bottom up search
-        let mut current_node = (self.heap.len() as u64 / 2 + index / self.block_size) as usize;
-        while bottom_up_search && current_node != 0 {
-            //if current_node is right child go to parent
-            if current_node % 2 == 0 {
-                current_node = (current_node - 1) / 2;
-            } else {
-                current_node += 1;
-                if current_diff <= self.heap[current_node].max_excess
-                    && current_diff >= self.heap[current_node].min_excess
-                {
-                    bottom_up_search = false;
-                    top_down_search = true;
-                } else {
-                    //current_diff is not in the right child range. go to parent.
-                    current_diff = current_diff - self.heap[current_node as usize].excess;
+        if(!found) {
+            //bottom up search
+            let mut current_node = (self.heap.len() as u64 / 2 + index / self.block_size) as usize;
+            while bottom_up_search && current_node != 0 {
+                //if current_node is right child go to parent
+                if current_node % 2 == 0 {
                     current_node = (current_node - 1) / 2;
-                }
-            }
-        }
-        //top down search
-        while !found && top_down_search {
-            if current_node <= self.heap.len() / 2 {
-                top_down_search = false;
-                block_search = true;
-            } else {
-                let left_child = 2 * current_node + 1;
-                let right_child = 2 * current_node + 2;
-                if current_diff <= self.heap[left_child].max_excess
-                    && current_diff >= self.heap[left_child].min_excess
-                {
-                    current_node = left_child;
                 } else {
-                    current_node = right_child;
-                    current_diff = current_diff - self.heap[left_child].excess;
+                    current_node += 1;
+                    if current_diff <= self.heap[current_node].max_excess
+                        && current_diff >= self.heap[current_node].min_excess
+                        {
+                            bottom_up_search = false;
+                            top_down_search = true;
+                        } else {
+                        //current_diff is not in the right child range. go to parent.
+                        current_diff = current_diff - self.heap[current_node as usize].excess;
+                        current_node = (current_node - 1) / 2;
+                    }
+                }
+            }
+            //top down search
+            while top_down_search {
+                if current_node >= self.heap.len() / 2 {
+                    top_down_search = false;
+                    block_search = true;
+                } else {
+                    let left_child = 2 * current_node + 1;
+                    let right_child = 2 * current_node + 2;
+                    if current_diff <= self.heap[left_child].max_excess
+                        && current_diff >= self.heap[left_child].min_excess
+                        {
+                            current_node = left_child;
+                        } else {
+                        current_node = right_child;
+                        current_diff = current_diff - self.heap[left_child].excess;
+                    }
+                }
+            }
+            position_in_block = (current_node - self.heap.len() / 2) as u64 * self.block_size;
+            let block_start = position_in_block;
+            let end_of_target_block = block_start + self.block_size;
+            while !found && block_search && position_in_block < end_of_target_block {
+                if self.bits[position_in_block] {
+                    // - and + inverted!
+                    current_diff -= 1;
+                } else {
+                    current_diff += 1;
+                }
+                if current_diff == 0 {
+                    found = true;
+                } else {
+                    position_in_block += 1;
                 }
             }
         }
-
-        println!("current_node: {}", current_node); // TODO test
-        println!("heap.len() - 1: {}", self.heap.len() - 1); // TODO test
-        println!(
-            "interim_value: {}",
-            current_node as i64 - ((self.heap.len() - 1) / 2) as i64
-        ); // TODO test
-           // TODO position in block must not be < 0!
-        position_in_block = (current_node - ((self.heap.len() - 1) / 2)) as u64 * self.block_size;
-        let block_start = position_in_block;
-        let end_of_target_block = block_start + self.block_size;
-        while !found && block_search && position_in_block < end_of_target_block {
-            if self.bits[position_in_block] {
-                current_diff += 1;
-            } else {
-                current_diff -= 1;
-            }
-            if current_diff == 0 {
-                found = true;
-            } else {
-                position_in_block += 1;
-            }
-        }
-
         Ok(position_in_block)
     }
 
@@ -356,7 +346,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_min_max() {
         let bits = bit_vec![
             true, true, true, false, true, false, true, true, false, false, false, true, false,
@@ -369,12 +358,24 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_excess() {
         let bits = bit_vec![true, false];
         let min_max = MinMax::new(bits, 2);
         assert_eq!(min_max.excess(0).unwrap(), 1);
         assert_eq!(min_max.excess(1).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_fwd_search() {
+        let bits =
+            bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.fwd_search(0,-1).unwrap(), 11);
+        assert_eq!(min_max.fwd_search(1 , -1).unwrap(), 6);
+        assert_eq!(min_max.fwd_search(5 , 1).unwrap(), 8);
+        assert_eq!(min_max.fwd_search(4 , -1).unwrap(), 5);
+        assert_eq!(min_max.fwd_search(4 , 0).unwrap(), 8);
+        assert_eq!(min_max.fwd_search(0 , 2).unwrap(), 2);
     }
 
     #[test]
