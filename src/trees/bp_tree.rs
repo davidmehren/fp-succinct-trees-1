@@ -164,7 +164,7 @@ impl<L: PartialEq + Clone> SuccinctTree<BPTree<L>, L> for BPTree<L> {
         let first_child = self.first_child(index)?;
         while self.next_sibling(first_child).err().is_none() {
             let sibling: u64 = self.next_sibling(index)?;
-if *self.child_label(sibling)? == label {
+            if *self.child_label(sibling)? == label {
                 return Ok(sibling);
             }
         }
@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn from_empty_id_tree() {
         let id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
-        let bp_tree: Result<BPTree<i32>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
+        let bp_tree: Result<BPTree<String>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
         assert_eq!(bp_tree.unwrap_err(), EmptyTreeError);
     }
 
