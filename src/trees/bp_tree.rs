@@ -20,7 +20,7 @@
 //! use fp_succinct_trees_1::trees::bp_tree::BPTree;
 //!
 //! let bitvec = bit_vec!(true, true, false, false);
-//! let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+//! let tree: BPTree<i32> = BPTree::from_bitvec(bitvec.clone()).unwrap();
 //! assert!(tree.is_leaf(1).unwrap());
 //! # }
 //! ```

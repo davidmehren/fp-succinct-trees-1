@@ -19,7 +19,7 @@
 //! use fp_succinct_trees_1::trees::louds_tree::LOUDSTree;
 //!
 //! let bitvec = bit_vec![true, true, false, false];
-//! let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+//! let tree: LOUDSTree<i32> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
 //! assert!(tree.is_leaf(3).unwrap());
 //! # }
 //! ```

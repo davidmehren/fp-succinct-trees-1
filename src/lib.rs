@@ -7,7 +7,6 @@
 //! and the Range Min Max data structure. LOUDS and BP use the Rank/Select data
 //! structure from the Rust-Bio crate. Code examples can be found in the submodules.
 
-
 extern crate bio;
 #[macro_use]
 extern crate bv;
