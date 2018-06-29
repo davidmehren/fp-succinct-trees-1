@@ -1,0 +1,66 @@
+#[macro_use]
+extern crate criterion;
+extern crate fp_succinct_trees_1;
+extern crate id_tree;
+
+use criterion::Criterion;
+use criterion::Fun;
+use fp_succinct_trees_1::common::succinct_tree::SuccinctTree;
+use fp_succinct_trees_1::trees::bp_tree::BPTree;
+use fp_succinct_trees_1::trees::louds_tree::LOUDSTree;
+use id_tree::InsertBehavior::*;
+use id_tree::Node;
+use id_tree::NodeId;
+use id_tree::Tree;
+use id_tree::TreeBuilder;
+
+fn create_bench_tree() -> Tree<i32> {
+    let mut tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+    let root_id: NodeId = tree.insert(Node::new(0), AsRoot).unwrap();
+    let child1_id: NodeId = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    let child4_id = tree.insert(Node::new(1), UnderNode(&child1_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child4_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child1_id)).unwrap();
+    let child2_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child2_id)).unwrap();
+    let child5_id = tree.insert(Node::new(1), UnderNode(&child2_id)).unwrap();
+    let child6_id = tree.insert(Node::new(1), UnderNode(&child5_id)).unwrap();
+    let child7_id = tree.insert(Node::new(1), UnderNode(&child6_id)).unwrap();
+    let child8_id = tree.insert(Node::new(1), UnderNode(&child7_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child8_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child8_id)).unwrap();
+    let child3_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    tree.insert(Node::new(1), UnderNode(&child3_id)).unwrap();
+    tree
+}
+
+fn create_bench_idtree(c: &mut Criterion) {
+    let tree = create_bench_tree();
+    c.bench_function("Create bench tree", |b| b.iter(|| create_bench_tree()));
+}
+
+fn compare_from_id_tree(c: &mut Criterion) {
+    let louds = Fun::new("LOUDS from IDTree", |b, i| {
+        b.iter(|| LOUDSTree::from_id_tree(create_bench_tree()))
+    });
+    let bp = Fun::new("BP from IDTree", |b, i| {
+        b.iter(|| BPTree::from_id_tree(create_bench_tree()))
+    });
+    c.bench_functions("Create from IDTree", vec![louds, bp], 0);
+}
+
+fn compare_is_leaf(c: &mut Criterion) {
+    let louds = LOUDSTree::from_id_tree(create_bench_tree()).unwrap();
+    let bp = BPTree::from_id_tree(create_bench_tree()).unwrap();
+    let louds_fun = Fun::new("LOUDS", move |b, _| b.iter(|| louds.is_leaf(1)));
+    let bp_fun = Fun::new("BP", move |b, _| b.iter(|| bp.is_leaf(1)));
+    c.bench_functions("Compare is_leaf()", vec![louds_fun, bp_fun], 0);
+}
+
+criterion_group!(
+    benches,
+    create_bench_idtree,
+    compare_from_id_tree,
+    compare_is_leaf
+);
+criterion_main!(benches);
