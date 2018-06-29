@@ -4,6 +4,24 @@
 // except according to those terms.
 
 //! Range-Min-Max data structure based on Cordova and Navarro (2016)
+//!
+//! Example
+//!
+//! ```
+//! #[macro_use]
+//! extern crate bv;
+//! # extern crate fp_succinct_trees_1;
+//!
+//! # fn main() {
+//! use bv::BitVec;
+//! use bv::Bits;
+//! use fp_succinct_trees_1::datastructures::min_max::MinMax;
+//!
+//! let bits = bit_vec![true, false];
+//!        let min_max = MinMax::new(bits, 2);
+//!        assert_eq!(min_max.excess(0).unwrap(), 1);
+//! # }
+//! ```
 
 use bv::BitVec;
 use common::errors::NodeError;
