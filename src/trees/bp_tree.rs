@@ -138,9 +138,9 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// # Arguments
     /// * `index` The index of the node to get the label of
     /// # Errors
-    /// * `NotANodeError` If `index` does not reference a node.
-    fn child_label(&self, index: u64) -> Result<L, NodeError> {
-        unimplemented!();
+    /// * `NoLabelError` If `index` does not reference a node with a label.
+    fn child_label(&self, index: u64) -> Result<&L, NodeError> {
+        self.labels.get(index as usize).ok_or(NodeError::NoLabelError)
     }
 
     /// Returns the child from the specified node with that label
@@ -151,6 +151,7 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `NoSuchChildError` If there is no child which has this label
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
         unimplemented!();
+
     }
 }
 

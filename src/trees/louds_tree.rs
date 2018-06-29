@@ -153,7 +153,7 @@ impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// * `index` The index of the node to get the label of
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
-    fn child_label(&self, index: u64) -> Result<L, NodeError> {
+    fn child_label(&self, index: u64) -> Result<&L, NodeError> {
         unimplemented!();
     }
 
@@ -250,7 +250,8 @@ mod tests {
         let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         tree.save_to("testdata/loudstree.testdata".to_string())
             .unwrap();
-        let result: LOUDSTree<String> = LOUDSTree::from_file("testdata/loudstree.testdata".to_string()).unwrap();
+        let result: LOUDSTree<String> =
+            LOUDSTree::from_file("testdata/loudstree.testdata".to_string()).unwrap();
         assert_eq!(
             tree, result,
             "The loaded tree is not equal to the original one."
@@ -388,7 +389,6 @@ mod tests {
         assert_ne!(tree_a, tree_c)
     }
 
-
     #[test]
     fn from_id_tree() {
         let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
@@ -406,9 +406,6 @@ mod tests {
     fn from_empty_id_tree() {
         let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         let tree: Result<LOUDSTree<String>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
-        assert_eq!(
-            tree.unwrap_err(),
-            EmptyTreeError
-        );
+        assert_eq!(tree.unwrap_err(), EmptyTreeError);
     }
 }
