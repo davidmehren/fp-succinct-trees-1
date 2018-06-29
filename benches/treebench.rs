@@ -57,10 +57,36 @@ fn compare_is_leaf(c: &mut Criterion) {
     c.bench_functions("Compare is_leaf()", vec![louds_fun, bp_fun], 0);
 }
 
+fn compare_parent(c: &mut Criterion) {
+    let louds = LOUDSTree::from_id_tree(create_bench_tree()).unwrap();
+    let bp = BPTree::from_id_tree(create_bench_tree()).unwrap();
+    let louds_fun = Fun::new("LOUDS", move |b, _| b.iter(|| louds.parent(1)));
+    let bp_fun = Fun::new("BP", move |b, _| b.iter(|| bp.parent(1)));
+    c.bench_functions("Compare parent()", vec![louds_fun, bp_fun], 0);
+}
+
+fn compare_first_child(c: &mut Criterion) {
+    let louds = LOUDSTree::from_id_tree(create_bench_tree()).unwrap();
+    let bp = BPTree::from_id_tree(create_bench_tree()).unwrap();
+    let louds_fun = Fun::new("LOUDS", move |b, _| b.iter(|| louds.first_child(1)));
+    let bp_fun = Fun::new("BP", move |b, _| b.iter(|| bp.first_child(1)));
+    c.bench_functions("Compare first_child()", vec![louds_fun, bp_fun], 0);
+}
+
+fn compare_next_sibling(c: &mut Criterion) {
+    let louds = LOUDSTree::from_id_tree(create_bench_tree()).unwrap();
+    let bp = BPTree::from_id_tree(create_bench_tree()).unwrap();
+    let louds_fun = Fun::new("LOUDS", move |b, _| b.iter(|| louds.next_sibling(1)));
+    let bp_fun = Fun::new("BP", move |b, _| b.iter(|| bp.next_sibling(1)));
+    c.bench_functions("Compare next_sibling()", vec![louds_fun, bp_fun], 0);
+}
+
 criterion_group!(
     benches,
     create_bench_idtree,
     compare_from_id_tree,
-    compare_is_leaf
+    compare_is_leaf,
+    compare_first_child,
+    compare_next_sibling
 );
 criterion_main!(benches);
