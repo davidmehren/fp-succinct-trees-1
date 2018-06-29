@@ -370,7 +370,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn ancestor_is_ancestor() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
@@ -379,7 +378,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn ancestor_not_a_ancestor() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
@@ -388,7 +386,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn depth() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
@@ -398,11 +395,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn subtree_size() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
-        assert_eq!(tree.subtree_size(0).unwrap(), 2);
+        assert_eq!(tree.subtree_size(0).unwrap(), 3);
         assert_eq!(tree.subtree_size(1).unwrap(), 1);
         assert_eq!(tree.subtree_size(3).unwrap(), 1);
     }
