@@ -43,19 +43,19 @@ pub struct LOUDSTree<L> {
     labels: Vec<L>,
 }
 
-impl<L> PartialEq for LOUDSTree<L> {
+impl<L: PartialEq + Clone> PartialEq for LOUDSTree<L> {
     fn eq(&self, other: &Self) -> bool {
         self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
-impl<L> Debug for LOUDSTree<L> {
+impl<L: PartialEq + Clone> Debug for LOUDSTree<L> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
-impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
+impl<L: PartialEq + Clone> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// Checks if a node is a leaf.
     /// # Arguments
     /// * `index` The index of the node to check
@@ -145,7 +145,12 @@ impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
             }
             bitvec.push(false);
         }
-        Ok(Self::from_bitvec(bitvec).unwrap())
+
+        let mut l_tree = Self::from_bitvec(bitvec).unwrap();
+        for node in tree.traverse_pre_order(root).unwrap() {
+            l_tree.labels.push((*node.data()).clone());
+        }
+        Ok(l_tree)
     }
 
     /// Returns the label for the edge between the parent and the node
@@ -154,7 +159,14 @@ impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
     fn child_label(&self, index: u64) -> Result<&L, NodeError> {
-        unimplemented!();
+        // child label(x) =
+        //L[rank ( (parent(x)) + child rank(x) − 1]
+        let parent = self.parent(index)?;
+        let child_rank = self.child_rank(index).ok_or(NodeError::NotANodeError)?;
+        Ok(self
+            .labels
+            .get((parent + child_rank - 1) as usize)
+            .ok_or(NodeError::NoLabelError)?)
     }
 
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
@@ -162,7 +174,7 @@ impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     }
 }
 
-impl<L> LOUDSTree<L> {
+impl<L: PartialEq + Clone> LOUDSTree<L> {
     fn prev_0(&self, index: u64) -> Option<u64> {
         self.rankselect.select_0(self.rankselect.rank_0(index)?)
     }
@@ -404,8 +416,8 @@ mod tests {
 
     #[test]
     fn from_empty_id_tree() {
-        let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
-        let tree: Result<LOUDSTree<i32>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
+        let id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
+        let tree: Result<LOUDSTree<String>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
         assert_eq!(tree.unwrap_err(), EmptyTreeError);
     }
 }
