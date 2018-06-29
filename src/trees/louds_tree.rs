@@ -36,25 +36,26 @@ use std::fmt::{Debug, Formatter};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::vec::Vec;
 
-#[derive(Serialize, Deserialize)]
-pub struct LOUDSTree {
+pub struct LOUDSTree<L> {
     rankselect: RankSelect,
+    labels: Vec<L>,
 }
 
-impl PartialEq for LOUDSTree {
+impl<L> PartialEq for LOUDSTree<L> {
     fn eq(&self, other: &Self) -> bool {
         self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
-impl Debug for LOUDSTree {
+impl<L> Debug for LOUDSTree<L> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
-impl SuccinctTree<LOUDSTree> for LOUDSTree {
+impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// Checks if a node is a leaf.
     /// # Arguments
     /// * `index` The index of the node to check
@@ -146,9 +147,22 @@ impl SuccinctTree<LOUDSTree> for LOUDSTree {
         }
         Ok(Self::from_bitvec(bitvec).unwrap())
     }
+
+    /// Returns the label for the edge between the parent and the node
+    /// # Arguments
+    /// * `index` The index of the node to get the label of
+    /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
+    fn child_label(&self, index: u64) -> Result<L, NodeError> {
+        unimplemented!();
+    }
+
+    fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
+        unimplemented!();
+    }
 }
 
-impl LOUDSTree {
+impl<L> LOUDSTree<L> {
     fn prev_0(&self, index: u64) -> Option<u64> {
         self.rankselect.select_0(self.rankselect.rank_0(index)?)
     }
@@ -183,18 +197,22 @@ impl LOUDSTree {
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
         Ok(Self {
-            rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
+            labels: Vec::with_capacity(bitvec.len() as usize),
+            rankselect: RankSelect::new(bitvec, superblock_size as usize),
         })
     }
 
     pub fn from_file(path: String) -> Result<Self, Error> {
         let file = fs::read(path).context("Could not read saved tree.")?;
-        let tree: Self = deserialize(&file).context("Error while deserializing tree.")?;
-        Ok(tree)
+        let rankselect: RankSelect = deserialize(&file).context("Error while deserializing tree.")?;
+        Ok(Self {
+            labels: Vec::with_capacity(rankselect.bits().len() as usize),
+            rankselect: rankselect,
+        })
     }
 
     pub fn save_to(&self, path: String) -> Result<(), Error> {
-        let encoded = serialize(&self).context("Error while serializing tree.")?;
+        let encoded = serialize(&self.rankselect).context("Error while serializing tree.")?;
         let mut file = File::create(path).context("Could not save tree.")?;
         file.write_all(&encoded)?;
         Ok(())
@@ -210,7 +228,7 @@ mod tests {
     #[test]
     fn new_from_bitvec() {
         let bitvec = bit_vec![true, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(
             *tree.rankselect.bits(),
             bitvec,
@@ -221,72 +239,91 @@ mod tests {
     #[test]
     fn new_from_bitvec_invalid() {
         let bitvec = bit_vec![true, true];
+        let tree: Result<LOUDSTree<String>, InvalidBitvecError> = LOUDSTree::from_bitvec(bitvec);
+        assert_eq!(tree.unwrap_err(), InvalidBitvecError);
+    }
+
+    #[test]
+    fn save_load() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        tree.save_to("testdata/loudstree.testdata".to_string())
+            .unwrap();
+        let result: LOUDSTree<String> = LOUDSTree::from_file("testdata/loudstree.testdata".to_string()).unwrap();
         assert_eq!(
-            LOUDSTree::from_bitvec(bitvec.clone()).unwrap_err(),
-            InvalidBitvecError
+            tree, result,
+            "The loaded tree is not equal to the original one."
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Error while deserializing tree.")]
+    fn load_invalid() {
+        let _tree: LOUDSTree<String> =
+            LOUDSTree::from_file("testdata/loudstree_invalid.testdata".to_string()).unwrap();
     }
 
     #[test]
     fn is_leaf() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(tree.is_leaf(3).unwrap());
     }
 
     #[test]
     fn is_no_leaf() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert!(!tree.is_leaf(1).unwrap());
     }
 
     #[test]
     fn is_leaf_wrong_index() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.is_leaf(2).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
     fn is_leaf_wrong_index2() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.is_leaf(4).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
     fn first_child() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(1).unwrap(), 3);
     }
 
     #[test]
     fn first_child_no_parent() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.first_child(3).unwrap_err(), NodeError::NotAParentError);
     }
 
     #[test]
     fn parent() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.parent(3).unwrap(), 1)
     }
 
     #[test]
     fn parent_root_node() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.parent(1).unwrap_err(), NodeError::RootNodeError)
     }
 
     #[test]
     fn parent_no_node() {
         let bitvec = bit_vec![true, true, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.parent(0).unwrap_err(), NodeError::NotANodeError)
     }
 
@@ -294,7 +331,7 @@ mod tests {
     fn next_sibling() {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.next_sibling(5).unwrap(), 7);
         assert_eq!(tree.next_sibling(7).unwrap(), 9);
     }
@@ -303,7 +340,7 @@ mod tests {
     fn no_next_sibling() {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(
             tree.next_sibling(10).unwrap_err(),
             NodeError::NoSiblingError
@@ -314,7 +351,7 @@ mod tests {
     fn degree() {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.degree(1).unwrap(), 3);
         assert_eq!(tree.degree(5).unwrap(), 1);
         assert_eq!(tree.degree(9).unwrap(), 0);
@@ -324,7 +361,7 @@ mod tests {
     fn child_rank() {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         assert_eq!(tree.child_rank(9).unwrap(), 2);
         assert_eq!(tree.child_rank(7).unwrap(), 1);
         assert_eq!(tree.child_rank(5).unwrap(), 0);
@@ -334,7 +371,7 @@ mod tests {
     fn print() {
         let bitvec =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
         let str = format!("{:?}", tree);
         assert_eq!(str, "LOUDSTree\n  { bits: bit_vec![true, true, true, true, false, true, false, true, false, false, false, false] }")
     }
@@ -344,32 +381,13 @@ mod tests {
         let bitvec_a =
             bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
         let bitvec_b = bit_vec![true, true, false, false];
-        let tree_a = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
-        let tree_b = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
-        let tree_c = LOUDSTree::from_bitvec(bitvec_b.clone()).unwrap();
+        let tree_a: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
+        let tree_b: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec_a.clone()).unwrap();
+        let tree_c: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec_b.clone()).unwrap();
         assert_eq!(tree_a, tree_b);
         assert_ne!(tree_a, tree_c)
     }
 
-    #[test]
-    fn save_load() {
-        let bitvec =
-            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
-        let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
-        tree.save_to("testdata/loudstree.testdata".to_string())
-            .unwrap();
-        let result = LOUDSTree::from_file("testdata/loudstree.testdata".to_string()).unwrap();
-        assert_eq!(
-            tree, result,
-            "The loaded tree is not equal to the original one."
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Error while deserializing tree.")]
-    fn load_invalid() {
-        LOUDSTree::from_file("testdata/bptree_invalid.testdata".to_string()).unwrap();
-    }
 
     #[test]
     fn from_id_tree() {
@@ -378,7 +396,7 @@ mod tests {
         let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
-        let tree = LOUDSTree::from_id_tree(id_tree).unwrap();
+        let tree: LOUDSTree<String> = LOUDSTree::from_id_tree(id_tree).unwrap();
         let bitvec = bit_vec![true, true, true, false, true, false, false, false];
         let other_tree = LOUDSTree::from_bitvec(bitvec).unwrap();
         assert_eq!(tree, other_tree)
@@ -387,8 +405,9 @@ mod tests {
     #[test]
     fn from_empty_id_tree() {
         let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let tree: Result<LOUDSTree<String>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
         assert_eq!(
-            LOUDSTree::from_id_tree(id_tree).unwrap_err(),
+            tree.unwrap_err(),
             EmptyTreeError
         );
     }

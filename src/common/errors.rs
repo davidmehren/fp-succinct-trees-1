@@ -26,4 +26,8 @@ pub enum NodeError {
     HasNoParentError,
     #[fail(display = "The supplied index does not reference a node with a next sibling.")]
     HasNoFurtherSiblingsError,
+    #[fail(display = "The supplied index has no label.")]
+    NoLabelError,
+    #[fail(display = "There is no child which passes the requirements.")]
+    NoSuchChildError,
 }
