@@ -194,11 +194,11 @@ impl MinMax {
             } else {
                 current_excess -= 1;
             }
-            if current_excess == diff {
+            if current_excess == diff - 1 {
                 found = true;
             }
         }
-        let mut current_diff = diff - current_excess;
+        let mut current_diff = diff - 1 - current_excess;
         bottom_up_search = true;
         if (!found) {
             //bottom up search
@@ -370,16 +370,15 @@ mod tests {
         let bits =
             bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
         let min_max = MinMax::new(bits, 4);
-        assert_eq!(min_max.fwd_search(0, -1).unwrap(), 11);
-        assert_eq!(min_max.fwd_search(1, -1).unwrap(), 6);
-        assert_eq!(min_max.fwd_search(5, 1).unwrap(), 8);
-        assert_eq!(min_max.fwd_search(4, -1).unwrap(), 5);
-        assert_eq!(min_max.fwd_search(4, 0).unwrap(), 8);
-        assert_eq!(min_max.fwd_search(0, 2).unwrap(), 2);
+        assert_eq!(min_max.fwd_search(0, 0).unwrap(), 11);
+        assert_eq!(min_max.fwd_search(1, 0).unwrap(), 6);
+        assert_eq!(min_max.fwd_search(5, 2).unwrap(), 8);
+        assert_eq!(min_max.fwd_search(4, 0).unwrap(), 5);
+        assert_eq!(min_max.fwd_search(4, 1).unwrap(), 8);
+        assert_eq!(min_max.fwd_search(0, 3).unwrap(), 2);
     }
 
     #[test]
-    #[ignore]
     fn test_find_close() {
         let bits = bit_vec![true, true, false, false];
         let min_max = MinMax::new(bits, 2);
