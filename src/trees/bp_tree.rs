@@ -177,17 +177,6 @@ impl BPTree {
         Ok((self.minmax.find_close(index)? - index + 1) / 2)
     }
 
-    /// Returns a () - BPTree
-    ///
-    pub fn stub_create() -> Self {
-        let bitvec: BitVec<u8> = bit_vec![true, false];
-        Self {
-            rankselect: RankSelect::new(bitvec.clone(), 1),
-            minmax: MinMax::new(bitvec.clone(), 1024),
-            bits: bitvec,
-        }
-    }
-
     /// Returns a BPTree from a given BitVec
     /// # Arguments
     /// * `bitvec` The BitVec for the specified BPTree
