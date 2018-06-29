@@ -51,13 +51,13 @@ pub struct BPTree<L> {
     minmax: MinMax,
 }
 
-impl<L> PartialEq for BPTree<L> {
+impl<L: PartialEq + Clone> PartialEq for BPTree<L> {
     fn eq(&self, other: &Self) -> bool {
         self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
-impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
+impl<L: PartialEq + Clone> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// Checks if a node is a leaf.
     /// # Arguments
     /// * `index` The index of the node to check
@@ -102,6 +102,7 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `index` The index of the node to get the next sibling of.
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
+    /// * `NoSiblingError` If `index` has no further siblings.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         let parent_a = self.parent(index)?;
         let sibling = self.minmax.find_close(index)? + 1;
@@ -118,9 +119,13 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `tree` The IDTree which should be converted
     /// # Errors
     /// * `EmptyTreeError` If `tree` does not contain any nodes.
-    fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
+    fn from_id_tree(tree: Tree<L>) -> Result<Self, EmptyTreeError> {
+        let mut labels: Vec<L> = Vec::new();
         let bitvec = if tree.height() > 0 {
             let root_id: &NodeId = tree.root_node_id().unwrap();
+            for node in tree.traverse_pre_order(root_id).unwrap() {
+                labels.push(node.data().clone());
+            }
             Self::traverse_id_tree_for_bitvec(tree.get(root_id).unwrap(), &tree)
         } else {
             return Err(EmptyTreeError);
@@ -130,7 +135,7 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
         Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
-            labels: Vec::with_capacity(bitvec.len() as usize),
+            labels: labels,
         })
     }
 
@@ -138,9 +143,13 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// # Arguments
     /// * `index` The index of the node to get the label of
     /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     /// * `NoLabelError` If `index` does not reference a node with a label.
     fn child_label(&self, index: u64) -> Result<&L, NodeError> {
-        self.labels.get(index as usize).ok_or(NodeError::NoLabelError)
+        self.is_valid_index(index)?;
+        self.labels
+            .get(index as usize)
+            .ok_or(NodeError::NoLabelError)
     }
 
     /// Returns the child from the specified node with that label
@@ -148,20 +157,28 @@ impl<L> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `index` The index of the node to analyze
     /// * `label` The label which a should have
     /// # Errors
+    /// * `NotANodeError` If `index` does not reference a node.
     /// * `NoSuchChildError` If there is no child which has this label
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
-        unimplemented!();
-
+        self.is_valid_index(index)?;
+        let first_child = self.first_child(index)?;
+        while self.next_sibling(first_child).err().is_none() {
+            let sibling: u64 = self.next_sibling(index)?;
+            if *self.child_label(sibling)? == label {
+                return Ok(sibling);
+            }
+        }
+        Err(NodeError::NoSuchChildError)
     }
 }
 
-impl<L> Debug for BPTree<L> {
+impl<L: PartialEq + Clone> Debug for BPTree<L> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "BPTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
-impl<L> BPTree<L> {
+impl<L: PartialEq + Clone> BPTree<L> {
     /// Returns whether the index is valid
     /// # Arguments
     /// * `index` The index which should be valid
@@ -264,7 +281,7 @@ impl<L> BPTree<L> {
         Ok(())
     }
 
-    fn traverse_id_tree_for_bitvec(node: &Node<i32>, tree: &Tree<i32>) -> BitVec<u8> {
+    fn traverse_id_tree_for_bitvec(node: &Node<L>, tree: &Tree<L>) -> BitVec<u8> {
         let mut bitvec = BitVec::new();
         bitvec.push(true);
         for child in node.children() {
@@ -451,7 +468,7 @@ mod tests {
     #[test]
     fn traverse_id_tree_for_bitvec() {
         let bitvec = bit_vec!(true, true, true, false, false, true, false, false);
-        let expected_tree: BPTree<String> = BPTree::from_bitvec(bitvec.clone()).unwrap();
+        let expected_tree: BPTree<i32> = BPTree::from_bitvec(bitvec.clone()).unwrap();
         let mut id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
         let root_id: NodeId = id_tree.insert(Node::new(0), AsRoot).unwrap();
         let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -464,7 +481,7 @@ mod tests {
     #[test]
     fn from_empty_id_tree() {
         let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
-        let bp_tree: Result<BPTree<String>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
+        let bp_tree: Result<BPTree<i32>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
         assert_eq!(bp_tree.unwrap_err(), EmptyTreeError);
     }
 
@@ -477,5 +494,12 @@ mod tests {
             str,
             "BPTree\n  { bits: bit_vec![true, true, false, true, false, false] }"
         )
+    }
+
+    #[test]
+    fn child_label() {
+        let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
+        let bp_tree: Result<BPTree<i32>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
+        assert_eq!(bp_tree.unwrap_err(), EmptyTreeError);
     }
 }

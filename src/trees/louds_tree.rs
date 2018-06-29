@@ -132,7 +132,7 @@ impl<L> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// * `tree` The IDTree which should be converted
     /// # Errors
     /// * `EmptyTreeError` If `tree` does not contain any nodes.
-    fn from_id_tree(tree: Tree<i32>) -> Result<Self, EmptyTreeError> {
+    fn from_id_tree(tree: Tree<L>) -> Result<Self, EmptyTreeError> {
         let root = match tree.root_node_id() {
             Some(id) => id,
             None => return Err(EmptyTreeError),
@@ -396,7 +396,7 @@ mod tests {
         let child_id = id_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
-        let tree: LOUDSTree<String> = LOUDSTree::from_id_tree(id_tree).unwrap();
+        let tree: LOUDSTree<i32> = LOUDSTree::from_id_tree(id_tree).unwrap();
         let bitvec = bit_vec![true, true, true, false, true, false, false, false];
         let other_tree = LOUDSTree::from_bitvec(bitvec).unwrap();
         assert_eq!(tree, other_tree)
@@ -405,7 +405,7 @@ mod tests {
     #[test]
     fn from_empty_id_tree() {
         let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
-        let tree: Result<LOUDSTree<String>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
+        let tree: Result<LOUDSTree<i32>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
         assert_eq!(tree.unwrap_err(), EmptyTreeError);
     }
 }

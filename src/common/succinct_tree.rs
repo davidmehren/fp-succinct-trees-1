@@ -9,7 +9,7 @@ pub trait SuccinctTree<T, Label>: Debug {
     fn parent(&self, index: u64) -> Result<u64, NodeError>;
     fn first_child(&self, index: u64) -> Result<u64, NodeError>;
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError>;
-    fn from_id_tree(tree: Tree<i32>) -> Result<T, EmptyTreeError>;
+    fn from_id_tree(tree: Tree<Label>) -> Result<T, EmptyTreeError>;
     fn child_label(&self, index: u64) -> Result<&Label, NodeError>;
     fn labeled_child(&self, index: u64, label: Label) -> Result<u64, NodeError>;
 
