@@ -1,3 +1,29 @@
+// Copyright 2018 David Mehren.
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! LOUDS succinct tree implementation based on Jacobson (1989) and Arroyuelo et al. (2010)
+//!
+//! Example
+//!
+//! ```
+//! #[macro_use]
+//! extern crate bv;
+//! # extern crate fp_succinct_trees_1;
+//!
+//! # fn main() {
+//! use bv::BitVec;
+//! use bv::Bits;
+//! use fp_succinct_trees_1::common::succinct_tree::SuccinctTree;
+//! use fp_succinct_trees_1::trees::louds_tree::LOUDSTree;
+//!
+//! let bitvec = bit_vec![true, true, false, false];
+//! let tree = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+//! assert!(tree.is_leaf(3).unwrap());
+//! # }
+//! ```
+
 use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::{BitVec, Bits};

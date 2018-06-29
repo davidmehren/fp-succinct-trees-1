@@ -1,3 +1,30 @@
+// Copyright 2018 Kevin Kaßelmann.
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! BP succinct tree implementation based on Jacobson (1989), Munro and Raman (2001),
+//! Arroyuelo et al. (2010) and Cordova and Navarro (2016).
+//!
+//! Example
+//!
+//! ```
+//! #[macro_use]
+//! extern crate bv;
+//! # extern crate fp_succinct_trees_1;
+//!
+//! # fn main() {
+//! use bv::BitVec;
+//! use bv::Bits;
+//! use fp_succinct_trees_1::common::succinct_tree::SuccinctTree;
+//! use fp_succinct_trees_1::trees::bp_tree::BPTree;
+//!
+//! let bitvec = bit_vec!(true, true, false, false);
+//! let tree = BPTree::from_bitvec(bitvec.clone()).unwrap();
+//! assert!(tree.is_leaf(1).unwrap());
+//! # }
+//! ```
+
 use bincode::{deserialize, serialize};
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
