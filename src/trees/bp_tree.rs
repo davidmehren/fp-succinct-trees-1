@@ -77,8 +77,14 @@ impl SuccinctTree<BPTree> for BPTree {
     /// # Errors
     /// * `NotANodeError` If `index` does not reference a node.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
-        self.is_valid_index(index)?;
-        Ok(self.minmax.find_close(index)? + 1)
+        let parent_a = self.parent(index)?;
+        let sibling = self.minmax.find_close(index)? + 1;
+        let parent_b = self.parent(sibling)?;
+        if parent_a == parent_b {
+            Ok(sibling)
+        } else {
+            Err(NodeError::NoSiblingError)
+        }
     }
 
     /// Constructs a BPTree from a IDTree
