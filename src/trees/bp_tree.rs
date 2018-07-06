@@ -391,7 +391,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn next_sibling() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree: BPTree<String> = BPTree::from_bitvec(bitvec.clone()).unwrap();

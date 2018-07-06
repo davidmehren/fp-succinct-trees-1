@@ -278,8 +278,7 @@ impl MinMax {
     }
 
     fn bwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
-
-        let mut block_no= index / self.block_size;
+        let mut block_no = index / self.block_size;
         let mut begin_of_block = block_no * self.block_size;
         let mut end_of_block = begin_of_block + self.block_size - 1;
         let mut current_node = (self.heap.len() / 2) as u64 + block_no;
@@ -291,7 +290,7 @@ impl MinMax {
         let mut found = false;
 
         while !found && position > begin_of_block {
-            if self.bits[position]{
+            if self.bits[position] {
                 current_excess -= 1;
             } else {
                 current_excess += 1;
@@ -309,13 +308,14 @@ impl MinMax {
 
             while bottom_up && current_node > 0 {
                 if current_node % 2 == 0 {
-                    if self.heap[current_node as usize -1].max_excess >= look_for &&
-                        self.heap[current_node as usize -1].min_excess <= look_for {
+                    if self.heap[current_node as usize - 1].max_excess >= look_for
+                        && self.heap[current_node as usize - 1].min_excess <= look_for
+                    {
                         bottom_up = false;
                         top_down = true;
                         current_node -= 1;
                     } else {
-                        look_for = look_for + self.heap[current_node as usize -1].excess;
+                        look_for = look_for + self.heap[current_node as usize - 1].excess;
                         current_node = (current_node - 1) / 2;
                     }
                 } else {
@@ -324,20 +324,20 @@ impl MinMax {
             }
 
             while top_down {
-                if self.heap[current_node as usize * 2 + 2].max_excess >= look_for &&
-                    self.heap[current_node as usize * 2 + 2].min_excess <= look_for {
+                if self.heap[current_node as usize * 2 + 2].max_excess >= look_for
+                    && self.heap[current_node as usize * 2 + 2].min_excess <= look_for
+                {
                     current_node = current_node * 2 + 2;
-                } else if self.heap[current_node as usize * 2 + 1].max_excess >= look_for &&
-                    self.heap[current_node as usize * 2 + 1].min_excess <= look_for {
+                } else if self.heap[current_node as usize * 2 + 1].max_excess >= look_for
+                    && self.heap[current_node as usize * 2 + 1].min_excess <= look_for
+                {
                     current_node = current_node * 2 + 1;
-
                 }
 
                 if current_node < self.heap.len() as u64 / 2 {
                     top_down = false;
                 }
             }
-
         }
 
         Ok(1)
