@@ -278,7 +278,69 @@ impl MinMax {
     }
 
     fn bwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
-        unimplemented!();
+
+        let mut block_no= index / self.block_size;
+        let mut begin_of_block = block_no * self.block_size;
+        let mut end_of_block = begin_of_block + self.block_size - 1;
+        let mut current_node = (self.heap.len() / 2) as u64 + block_no;
+
+        let index_excess = self.excess(index).unwrap() as i64;
+        let mut current_excess = index_excess as i64;
+
+        let mut position = index;
+        let mut found = false;
+
+        while !found && position > begin_of_block {
+            if self.bits[position]{
+                current_excess -= 1;
+            } else {
+                current_excess += 1;
+            }
+            position -= 1;
+            if current_excess == index_excess + diff {
+                found = true;
+            }
+        }
+
+        if !found {
+            let mut look_for = diff + index_excess - current_excess;
+            let mut bottom_up = true;
+            let mut top_down = false;
+
+            while bottom_up && current_node > 0 {
+                if current_node % 2 == 0 {
+                    if self.heap[current_node as usize -1].max_excess >= look_for &&
+                        self.heap[current_node as usize -1].min_excess <= look_for {
+                        bottom_up = false;
+                        top_down = true;
+                        current_node -= 1;
+                    } else {
+                        look_for = look_for + self.heap[current_node as usize -1].excess;
+                        current_node = (current_node - 1) / 2;
+                    }
+                } else {
+                    current_node = (current_node - 1) / 2;
+                }
+            }
+
+            while top_down {
+                if self.heap[current_node as usize * 2 + 2].max_excess >= look_for &&
+                    self.heap[current_node as usize * 2 + 2].min_excess <= look_for {
+                    current_node = current_node * 2 + 2;
+                } else if self.heap[current_node as usize * 2 + 1].max_excess >= look_for &&
+                    self.heap[current_node as usize * 2 + 1].min_excess <= look_for {
+                    current_node = current_node * 2 + 1;
+
+                }
+
+                if current_node < self.heap.len() as u64 / 2 {
+                    top_down = false;
+                }
+            }
+
+        }
+
+        Ok(1)
     }
 
     pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
@@ -402,6 +464,15 @@ mod tests {
         let min_max = MinMax::new(bits, 2);
         assert_eq!(min_max.find_close(0).unwrap(), 3);
         assert_eq!(min_max.find_close(1).unwrap(), 2);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_bwd_search() {
+        let bits =
+            bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.bwd_search(0, 0).unwrap(), 11);
     }
 
     #[test]
