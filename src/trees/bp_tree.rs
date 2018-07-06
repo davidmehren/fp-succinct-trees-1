@@ -45,19 +45,19 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 
-pub struct BPTree<L> {
+pub struct BPTree<L: PartialEq + Clone + Debug> {
     labels: Vec<L>,
     rankselect: RankSelect,
     minmax: MinMax,
 }
 
-impl<L: PartialEq + Clone> PartialEq for BPTree<L> {
+impl<L: PartialEq + Clone + Debug> PartialEq for BPTree<L> {
     fn eq(&self, other: &Self) -> bool {
         self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
-impl<L: PartialEq + Clone> SuccinctTree<BPTree<L>, L> for BPTree<L> {
+impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// Checks if a node is a leaf.
     /// # Arguments
     /// * `index` The index of the node to check
@@ -172,13 +172,13 @@ impl<L: PartialEq + Clone> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     }
 }
 
-impl<L: PartialEq + Clone> Debug for BPTree<L> {
+impl<L: PartialEq + Clone + Debug> Debug for BPTree<L> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "BPTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
-impl<L: PartialEq + Clone> BPTree<L> {
+impl<L: PartialEq + Clone + Debug> BPTree<L> {
     /// Returns whether the index is valid
     /// # Arguments
     /// * `index` The index which should be valid
@@ -498,8 +498,71 @@ mod tests {
 
     #[test]
     fn child_label() {
-        let id_tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
-        let bp_tree: Result<BPTree<i32>, EmptyTreeError> = BPTree::from_id_tree(id_tree);
-        assert_eq!(bp_tree.unwrap_err(), EmptyTreeError);
+        let mut id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree
+            .insert(Node::new(String::from("root")), AsRoot)
+            .unwrap();
+        let child_id = id_tree
+            .insert(
+                Node::new(String::from("first_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        id_tree
+            .insert(Node::new(String::from("leaf")), UnderNode(&child_id))
+            .unwrap();
+        id_tree
+            .insert(
+                Node::new(String::from("second_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        let bp_tree = BPTree::from_id_tree(id_tree).unwrap();
+        assert_eq!(*bp_tree.child_label(0).unwrap(), "root");
+        assert_eq!(*bp_tree.child_label(1).unwrap(), "first_root_child");
+        assert_eq!(*bp_tree.child_label(2).unwrap(), "leaf");
+        assert_eq!(*bp_tree.child_label(3).unwrap(), "second_root_child");
+        assert_eq!(
+            bp_tree.child_label(4).err().unwrap(),
+            NodeError::NoLabelError
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn labeled_child() {
+        let mut id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree
+            .insert(Node::new(String::from("root")), AsRoot)
+            .unwrap();
+        let child_id = id_tree
+            .insert(
+                Node::new(String::from("first_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        id_tree
+            .insert(Node::new(String::from("leaf")), UnderNode(&child_id))
+            .unwrap();
+        id_tree
+            .insert(
+                Node::new(String::from("second_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        let bp_tree = BPTree::from_id_tree(id_tree).unwrap();
+        assert_eq!(
+            bp_tree
+                .labeled_child(0, String::from("second_root_child"))
+                .unwrap(),
+            5
+        );
+        assert_eq!(
+            bp_tree
+                .labeled_child(0, String::from("first_root_child"))
+                .unwrap(),
+            1
+        );
+        assert_eq!(bp_tree.labeled_child(1, String::from("leaf")).unwrap(), 3);
     }
 }

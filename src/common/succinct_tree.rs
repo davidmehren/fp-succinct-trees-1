@@ -4,14 +4,14 @@ use common::errors::NodeError;
 use id_tree::Tree;
 use std::fmt::Debug;
 
-pub trait SuccinctTree<T, Label>: Debug {
+pub trait SuccinctTree<T, L>: Debug {
     fn is_leaf(&self, index: u64) -> Result<bool, NodeError>;
     fn parent(&self, index: u64) -> Result<u64, NodeError>;
     fn first_child(&self, index: u64) -> Result<u64, NodeError>;
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError>;
-    fn from_id_tree(tree: Tree<Label>) -> Result<T, EmptyTreeError>;
-    fn child_label(&self, index: u64) -> Result<&Label, NodeError>;
-    fn labeled_child(&self, index: u64, label: Label) -> Result<u64, NodeError>;
+    fn from_id_tree(tree: Tree<L>) -> Result<T, EmptyTreeError>;
+    fn child_label(&self, index: u64) -> Result<&L, NodeError>;
+    fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError>;
 
     /// Prüft ob ein Bitvector ein gültiger SuccinctTree ist, anhand des gültigen Exzesses und
     /// der Anzahl öffnender und schließender Klammern
