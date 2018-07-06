@@ -43,19 +43,19 @@ pub struct LOUDSTree<L> {
     labels: Vec<L>,
 }
 
-impl<L: PartialEq + Clone> PartialEq for LOUDSTree<L> {
+impl<L: PartialEq + Clone + Debug> PartialEq for LOUDSTree<L> {
     fn eq(&self, other: &Self) -> bool {
         self.rankselect.bits() == other.rankselect.bits()
     }
 }
 
-impl<L: PartialEq + Clone> Debug for LOUDSTree<L> {
+impl<L: PartialEq + Clone + Debug> Debug for LOUDSTree<L> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "LOUDSTree\n  {{ bits: {:?} }}", self.rankselect.bits())
     }
 }
 
-impl<L: PartialEq + Clone> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
+impl<L: PartialEq + Clone + Debug> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     /// Checks if a node is a leaf.
     /// # Arguments
     /// * `index` The index of the node to check
@@ -147,7 +147,7 @@ impl<L: PartialEq + Clone> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
         }
 
         let mut l_tree = Self::from_bitvec(bitvec).unwrap();
-        for node in tree.traverse_pre_order(root).unwrap() {
+        for node in tree.traverse_level_order(root).unwrap() {
             l_tree.labels.push((*node.data()).clone());
         }
         Ok(l_tree)
@@ -161,20 +161,40 @@ impl<L: PartialEq + Clone> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L> {
     fn child_label(&self, index: u64) -> Result<&L, NodeError> {
         // child label(x) =
         //L[rank ( (parent(x)) + child rank(x) − 1]
-        let parent = self.parent(index)?;
-        let child_rank = self.child_rank(index).ok_or(NodeError::NotANodeError)?;
+        let parent =
+            if index != 1 { self.parent(index)? } else { 0 };
+        let child_rank = if index == 1 || self.degree(parent)? == 1 {
+            0
+        } else {
+            self.child_rank(index)
+                .ok_or(NodeError::NotANodeError)
+                .unwrap()
+        };
+        let parent_rank = self.rankselect.rank_1(parent).unwrap();
         Ok(self
             .labels
-            .get((parent + child_rank - 1) as usize)
+            .get((parent_rank + child_rank - 1) as usize)
             .ok_or(NodeError::NoLabelError)?)
     }
 
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
-        unimplemented!();
+        println!("Foobar");
+        let left_bound = self
+            .rankselect
+            .rank_0(index)
+            .ok_or(NodeError::NotANodeError)?;
+        let right_bound = left_bound + self.degree(index)? - 1;
+        for i in left_bound..right_bound {
+            let item = self.labels.get(i as usize).unwrap();
+            if label == *item {
+                return Ok(i);
+            }
+        }
+        Err(NodeError::NoSuchChildError)
     }
 }
 
-impl<L: PartialEq + Clone> LOUDSTree<L> {
+impl<L: PartialEq + Clone + Debug> LOUDSTree<L> {
     fn prev_0(&self, index: u64) -> Option<u64> {
         self.rankselect.select_0(self.rankselect.rank_0(index)?)
     }
@@ -198,16 +218,21 @@ impl<L: PartialEq + Clone> LOUDSTree<L> {
         }
     }
     pub fn child_rank(&self, index: u64) -> Option<u64> {
+        if index <= 1 {
+            return Some(0);
+        }
         let y = self
             .rankselect
             .select_1(self.rankselect.rank_0(index - 1)?)?;
         Some(y - self.prev_0(y)?)
     }
+
     pub fn from_bitvec(bitvec: BitVec<u8>) -> Result<Self, InvalidBitvecError> {
         if !Self::is_valid(&bitvec as &BitVec<u8>) {
             return Err(InvalidBitvecError);
         }
         let superblock_size = Self::calc_superblock_size(bitvec.len());
+
         Ok(Self {
             labels: Vec::with_capacity(bitvec.len() as usize),
             rankselect: RankSelect::new(bitvec, superblock_size as usize),
@@ -378,6 +403,7 @@ mod tests {
         assert_eq!(tree.child_rank(9).unwrap(), 2);
         assert_eq!(tree.child_rank(7).unwrap(), 1);
         assert_eq!(tree.child_rank(5).unwrap(), 0);
+        assert_eq!(tree.child_rank(1).unwrap(), 0);
     }
 
     #[test]
@@ -409,6 +435,7 @@ mod tests {
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
         let tree: LOUDSTree<i32> = LOUDSTree::from_id_tree(id_tree).unwrap();
+        tree.labeled_child(0, 2);
         let bitvec = bit_vec![true, true, true, false, true, false, false, false];
         let other_tree = LOUDSTree::from_bitvec(bitvec).unwrap();
         assert_eq!(tree, other_tree)
@@ -419,5 +446,33 @@ mod tests {
         let id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
         let tree: Result<LOUDSTree<String>, EmptyTreeError> = LOUDSTree::from_id_tree(id_tree);
         assert_eq!(tree.unwrap_err(), EmptyTreeError);
+    }
+
+    #[test]
+    fn child_label() {
+        let mut id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree
+            .insert(Node::new(String::from("root")), AsRoot)
+            .unwrap();
+        let child_id = id_tree
+            .insert(
+                Node::new(String::from("first_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        id_tree
+            .insert(Node::new(String::from("leaf")), UnderNode(&child_id))
+            .unwrap();
+        id_tree
+            .insert(
+                Node::new(String::from("second_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        let bp_tree = LOUDSTree::from_id_tree(id_tree).unwrap();
+        assert_eq!(*bp_tree.child_label(1).unwrap(), "root");
+        assert_eq!(*bp_tree.child_label(4).unwrap(), "first_root_child");
+        assert_eq!(*bp_tree.child_label(6).unwrap(), "second_root_child");
+        assert_eq!(*bp_tree.child_label(7).unwrap(), "leaf");
     }
 }
