@@ -530,27 +530,47 @@ mod tests {
     }
 
     #[test]
-    //    #[ignore]
     fn test_rank_1() {
-        let bits1 = bit_vec![
+        let bits = bit_vec![
             true, true, true, false, true, false, true, true, false, false, false, true, false,
             true, true, true, false, true, false, false, false, false
         ];
-        let min_max = MinMax::new(bits1, 4);
+        let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.rank_1(11).unwrap(), 7);
         assert_eq!(min_max.rank_1(21).unwrap(), 11);
     }
 
     #[test]
     fn test_rank_0() {
-        let bits1 = bit_vec![
+        let bits = bit_vec![
             true, true, true, false, true, false, true, true, false, false, false, true, false,
             true, true, true, false, true, false, false, false, false
         ];
-        let min_max = MinMax::new(bits1, 4);
+        let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.rank_0(12).unwrap(), 6);
         assert_eq!(min_max.rank_0(17).unwrap(), 7);
         assert_eq!(min_max.rank_0(21).unwrap(), 11);
+    }
+
+    #[test]
+    fn test_parent() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.parent(2), 0);
+    }
+
+    #[test]
+    fn test_left_child() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.left_child(0), 1);
+    }
+
+    #[test]
+    fn test_right_child() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.right_child(0), 2);
     }
 
 }
