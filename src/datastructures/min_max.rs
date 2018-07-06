@@ -171,6 +171,13 @@ impl MinMax {
         2 * index + 2
     }
 
+    fn is_leaf(&self, index: usize) -> bool {
+        if index >= self.heap.len() /2 {
+            return true
+        }
+        false
+    }
+
     pub fn excess(&self, index: u64) -> Result<u64, NodeError> {
         let block_number = (index / self.block_size);
         let position_in_block = index % self.block_size;
@@ -414,6 +421,7 @@ impl MinMax {
                 }
             }
 
+            // TODO: rewrite to use helper functions
             let mut current_node = ((self.heap.len() / 2) as u64 + block_no) as usize;
             // multiplier * block_size: number of bits belonging to heap node
             let mut multiplier = 1;
@@ -439,6 +447,52 @@ impl MinMax {
             return Err(NodeError::NotANodeError);
         }
         Ok(index - self.rank_1(index).unwrap() + 1)
+    }
+
+    pub fn select_1(&self, rank: u64) -> Result<u64, NodeError> {
+        let index = self.select_1_recursive(rank as i64, 0) as u64;
+        if index >= self.bits_len {
+            return Err(NodeError::NotANodeError)
+        }
+        Ok(index)
+    }
+
+    // TODO: not working correctly
+    fn select_1_recursive(&self, bits_index: i64, heap_index: usize) -> i64 {
+        if self.is_leaf(heap_index) {
+            return bits_index
+        } else if self.ones_for_node(self.left_child(heap_index)) >= bits_index {
+            return self.select_1_recursive(bits_index, self.left_child(heap_index))
+        } else {
+            self.select_1_recursive(
+                heap_index as i64 - self.ones_for_node(self.left_child(heap_index)),
+                self.bits_for_node(self.left_child(heap_index)) as usize
+                    + self.right_child(heap_index)
+            )
+        }
+    }
+
+    pub fn select_0(&self, rank: u64) -> Result<u64, NodeError> {
+        unimplemented!()
+    }
+
+    /// Returns the number of 1s belonging to the heap node
+    fn ones_for_node(&self, heap_index: usize) -> i64 {
+        ((self.bits_for_node(heap_index) as i64 + self.heap[heap_index].excess)/2)
+    }
+
+    /// Returns the number of bits belonging to the heap node
+    fn bits_for_node(&self, heap_index: usize) -> i64 {
+        // multiplier for root level:
+        let mut multiplier = 2u64.pow(((self.heap.len()) as f64).log2() as u32);
+        let mut i = heap_index;
+        // compute correct multiplier for node with heap_index
+        while i > 0 {
+            // move up in heap while decreasing multiplier
+            i = self.parent(i);
+            multiplier /= 2;
+        }
+        (multiplier * self.block_size) as i64
     }
 }
 
@@ -621,6 +675,38 @@ mod tests {
         let bits = bit_vec![true, true, false, false];
         let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.right_child(0), 2);
+    }
+
+    #[test]
+    fn test_is_leaf() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 1);
+        assert_eq!(min_max.is_leaf(0), false);
+        // first leaf node:
+        assert_eq!(min_max.is_leaf(3), true);
+    }
+
+    #[test]
+    fn test_bits_for_node() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 1);
+        assert_eq!(min_max.bits_for_node(0), 4);
+    }
+
+    #[test]
+    fn test_ones_for_node() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 1);
+        assert_eq!(min_max.ones_for_node(0), 2);
+        assert_eq!(min_max.ones_for_node(6), 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_select_1() {
+        let bits = bit_vec![true, true, false, false];
+        let min_max = MinMax::new(bits, 1);
+        assert_eq!(min_max.select_1(2).unwrap(), 1);
     }
 
 }
