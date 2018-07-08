@@ -135,7 +135,7 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
         Ok(Self {
             rankselect: RankSelect::new(bitvec.clone(), superblock_size as usize),
             minmax: MinMax::new(bitvec.clone(), 1024),
-            labels: labels,
+            labels,
         })
     }
 
@@ -266,7 +266,7 @@ impl<L: PartialEq + Clone + Debug> BPTree<L> {
         Ok(Self {
             minmax: MinMax::new(rankselect.bits().clone(), 1024),
             labels: Vec::with_capacity(rankselect.bits().len() as usize),
-            rankselect: rankselect,
+            rankselect,
         })
     }
 

@@ -188,8 +188,8 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L
             if self.is_leaf(child_index).unwrap() {
                 label_index -= 1;
             }
-            let my_label = self.labels.get(label_index as usize).unwrap().clone();
-            if my_label == label {
+            let my_label = &self.labels[label_index as usize];
+            if *my_label == label {
                 return Ok(child_index);
             }
         }
@@ -247,7 +247,7 @@ impl<L: PartialEq + Clone + Debug> LOUDSTree<L> {
         let rankselect: RankSelect = deserialize(&file).context("Error while deserializing tree.")?;
         Ok(Self {
             labels: Vec::with_capacity(rankselect.bits().len() as usize),
-            rankselect: rankselect,
+            rankselect,
         })
     }
 
