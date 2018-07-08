@@ -178,16 +178,19 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<LOUDSTree<L>, L> for LOUDSTree<L
     }
 
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
-        println!("Foobar");
-        let left_bound = self
-            .rankselect
-            .rank_0(index)
-            .ok_or(NodeError::NotANodeError)?;
-        let right_bound = left_bound + self.degree(index)? - 1;
-        for i in left_bound..right_bound {
-            let item = self.labels.get(i as usize).unwrap();
-            if label == *item {
-                return Ok(i);
+        let child_count = self.degree(index)?;
+        for i in 1..=child_count {
+            let child_index = self.child(index, i).unwrap();
+            let mut label_index = self
+                .rankselect
+                .rank_0(child_index)
+                .ok_or(NodeError::NotANodeError)?;
+            if self.is_leaf(child_index).unwrap() {
+                label_index -= 1;
+            }
+            let my_label = self.labels.get(label_index as usize).unwrap().clone();
+            if my_label == label {
+                return Ok(child_index);
             }
         }
         Err(NodeError::NoSuchChildError)
@@ -435,7 +438,6 @@ mod tests {
         id_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         id_tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
         let tree: LOUDSTree<i32> = LOUDSTree::from_id_tree(id_tree).unwrap();
-        tree.labeled_child(0, 2);
         let bitvec = bit_vec![true, true, true, false, true, false, false, false];
         let other_tree = LOUDSTree::from_bitvec(bitvec).unwrap();
         assert_eq!(tree, other_tree)
@@ -474,5 +476,66 @@ mod tests {
         assert_eq!(*bp_tree.child_label(4).unwrap(), "first_root_child");
         assert_eq!(*bp_tree.child_label(6).unwrap(), "second_root_child");
         assert_eq!(*bp_tree.child_label(7).unwrap(), "leaf");
+    }
+
+    #[test]
+    fn labeled_child() {
+        let mut id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
+        let root_id: NodeId = id_tree
+            .insert(Node::new(String::from("root")), AsRoot)
+            .unwrap();
+        let child_id = id_tree
+            .insert(
+                Node::new(String::from("first_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        id_tree
+            .insert(Node::new(String::from("leaf")), UnderNode(&child_id))
+            .unwrap();
+        id_tree
+            .insert(
+                Node::new(String::from("second_root_child")),
+                UnderNode(&root_id),
+            )
+            .unwrap();
+        let louds_tree = LOUDSTree::from_id_tree(id_tree).unwrap();
+        assert_eq!(
+            louds_tree
+                .labeled_child(1, String::from("second_root_child"))
+                .unwrap(),
+            6
+        );
+        assert_eq!(
+            louds_tree
+                .labeled_child(1, String::from("first_root_child"))
+                .unwrap(),
+            4
+        );
+        assert_eq!(
+            louds_tree.labeled_child(4, String::from("leaf")).unwrap(),
+            7
+        );
+    }
+
+    #[test]
+    fn nth_child() {
+        let bitvec =
+            bit_vec![true, true, true, true, false, true, false, true, false, false, false, false];
+        let tree: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec.clone()).unwrap();
+        assert_eq!(tree.child(1, 1).unwrap(), 5);
+        assert_eq!(tree.child(1, 2).unwrap(), 7);
+        assert_eq!(tree.child(1, 3).unwrap(), 9);
+        assert_eq!(tree.child(5, 1).unwrap(), 10);
+        assert_eq!(tree.child(7, 1).unwrap(), 11);
+        let bitvec2 = bit_vec![true, true, false, true, false, false];
+        let tree2: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec2).unwrap();
+        assert_eq!(tree2.child(1, 1).unwrap(), 3);
+        assert_eq!(tree2.child(3, 1).unwrap(), 5);
+        let bitvec3 = bit_vec![true, true, true, false, true, false, false, false];
+        let tree3: LOUDSTree<String> = LOUDSTree::from_bitvec(bitvec3).unwrap();
+        assert_eq!(tree3.child(1, 1).unwrap(), 4);
+        assert_eq!(tree3.child(1, 2).unwrap(), 6);
+        assert_eq!(tree3.child(4, 1).unwrap(), 7);
     }
 }
