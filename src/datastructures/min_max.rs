@@ -305,6 +305,7 @@ impl MinMax {
             let mut look_for = diff + index_excess - current_excess;
             let mut bottom_up = true;
             let mut top_down = false;
+            let mut block_search = false;
 
             while bottom_up && current_node > 0 {
                 if current_node % 2 == 0 {
@@ -332,15 +333,41 @@ impl MinMax {
                     && self.heap[current_node as usize * 2 + 1].min_excess <= look_for
                 {
                     current_node = current_node * 2 + 1;
+                } else {
+                    //todo konnte nicht gefunden werden!!
                 }
 
                 if current_node < self.heap.len() as u64 / 2 {
                     top_down = false;
+                    block_search = true;
+                }
+            }
+
+            if block_search {
+                block_no = current_node - (self.heap.len() / 2) as u64;
+                begin_of_block = block_no * self.block_size;
+                end_of_block = begin_of_block + self.block_size - 1;
+                position = end_of_block;
+                while !found && position >= end_of_block {
+                    if self.bits[position + 1] {
+                        look_for -= 1;
+                    } else {
+                        look_for += 1;
+                    }
+                    if look_for == 0 {
+                        found = true;
+                    } else {
+                        position -= 1
+                    }
                 }
             }
         }
-
-        Ok(1)
+        if found {
+            Ok(position)
+        } else {
+            //todo konnte nicht gefunden werden!!
+            Ok(1)
+        }
     }
 
     pub fn find_close(&self, index: u64) -> Result<u64, NodeError> {
@@ -509,12 +536,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_bwd_search() {
         let bits =
             bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
         let min_max = MinMax::new(bits, 4);
-        assert_eq!(min_max.bwd_search(0, 0).unwrap(), 11);
+        assert_eq!(min_max.bwd_search(7, 1).unwrap(), 4);
     }
 
     #[test]
