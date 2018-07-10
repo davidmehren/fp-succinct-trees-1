@@ -122,16 +122,16 @@ impl MinMax {
                     );
                     if heap[left_child].excess + heap[right_child].min_excess
                         == heap[left_child].min_excess
-                    {
-                        // if the minimal excesses are equal
-                        number_min_excess = heap[left_child].number_min_excess
-                            + heap[right_child].number_min_excess;
-                    } else if heap[left_child].excess + heap[right_child].min_excess
+                        {
+                            // if the minimal excesses are equal
+                            number_min_excess = heap[left_child].number_min_excess
+                                + heap[right_child].number_min_excess;
+                        } else if heap[left_child].excess + heap[right_child].min_excess
                         < heap[left_child].min_excess
-                    {
-                        //if the right min excess is greater
-                        number_min_excess = heap[right_child].number_min_excess;
-                    } else {
+                        {
+                            //if the right min excess is greater
+                            number_min_excess = heap[right_child].number_min_excess;
+                        } else {
                         //if the left min excess is greater
                         number_min_excess = heap[left_child].number_min_excess;
                     }
@@ -229,10 +229,10 @@ impl MinMax {
                     current_node += 1;
                     if current_diff <= self.heap[current_node].max_excess
                         && current_diff >= self.heap[current_node].min_excess
-                    {
-                        bottom_up_search = false;
-                        top_down_search = true;
-                    } else {
+                        {
+                            bottom_up_search = false;
+                            top_down_search = true;
+                        } else {
                         //current_diff is not in the right child range. go to parent.
                         current_diff = current_diff - self.heap[current_node as usize].excess;
                         current_node = (current_node - 1) / 2;
@@ -249,9 +249,9 @@ impl MinMax {
                     let right_child = 2 * current_node + 2;
                     if current_diff <= self.heap[left_child].max_excess
                         && current_diff >= self.heap[left_child].min_excess
-                    {
-                        current_node = left_child;
-                    } else {
+                        {
+                            current_node = left_child;
+                        } else {
                         current_node = right_child;
                         current_diff = current_diff - self.heap[left_child].excess;
                     }
@@ -309,13 +309,13 @@ impl MinMax {
 
             while bottom_up && current_node > 0 {
                 if current_node % 2 == 0 {
-                    if self.heap[current_node as usize - 1].max_excess >= look_for
-                        && self.heap[current_node as usize - 1].min_excess <= look_for
-                    {
-                        bottom_up = false;
-                        top_down = true;
-                        current_node -= 1;
-                    } else {
+                    if self.heap[current_node as usize - 1].max_excess >= -1*look_for
+                        && self.heap[current_node as usize - 1].min_excess <= -1*look_for
+                        {
+                            bottom_up = false;
+                            top_down = true;
+                            current_node -= 1;
+                        } else {
                         look_for = look_for + self.heap[current_node as usize - 1].excess;
                         current_node = (current_node - 1) / 2;
                     }
@@ -325,34 +325,51 @@ impl MinMax {
             }
 
             while top_down {
-                if self.heap[current_node as usize * 2 + 2].max_excess >= look_for
-                    && self.heap[current_node as usize * 2 + 2].min_excess <= look_for
-                {
-                    current_node = current_node * 2 + 2;
-                } else if self.heap[current_node as usize * 2 + 1].max_excess >= look_for
-                    && self.heap[current_node as usize * 2 + 1].min_excess <= look_for
-                {
-                    current_node = current_node * 2 + 1;
-                } else {
-                    //todo konnte nicht gefunden werden!!
-                }
-
-                if current_node < self.heap.len() as u64 / 2 {
+                if current_node >= self.heap.len() as u64 / 2 {
                     top_down = false;
                     block_search = true;
+                } else {
+                    if self.heap[current_node as usize * 2 + 2].max_excess - self.heap[current_node as usize * 2 + 2].min_excess >= look_for.abs()
+                        {
+                            current_node = current_node * 2 + 2;
+                        } else if self.heap[current_node as usize * 2 + 1].max_excess - self.heap[current_node as usize * 2 + 1].min_excess >= look_for.abs()
+                        {
+                            current_node = current_node * 2 + 1;
+                        } else {
+                        //todo konnte nicht gefunden werden!!
+                    }
                 }
             }
+
+            /*while top_down {
+                if current_node <= self.heap.len() as u64 / 2 {
+                    top_down = false;
+                    block_search = true;
+                } else {
+                    if self.heap[current_node as usize * 2 + 2].max_excess >= -1 * look_for
+                        && self.heap[current_node as usize * 2 + 2].min_excess <= -1 * look_for
+                        {
+                            current_node = current_node * 2 + 2;
+                        } else if self.heap[current_node as usize * 2 + 1].max_excess >= -1 * look_for
+                        && self.heap[current_node as usize * 2 + 1].min_excess <= -1 * look_for
+                        {
+                            current_node = current_node * 2 + 1;
+                        } else {
+                        //todo konnte nicht gefunden werden!!
+                    }
+                }
+            }*/
 
             if block_search {
                 block_no = current_node - (self.heap.len() / 2) as u64;
                 begin_of_block = block_no * self.block_size;
                 end_of_block = begin_of_block + self.block_size - 1;
                 position = end_of_block;
-                while !found && position >= end_of_block {
+                while !found && position >= begin_of_block {
                     if self.bits[position + 1] {
-                        look_for -= 1;
-                    } else {
                         look_for += 1;
+                    } else {
+                        look_for -= 1;
                     }
                     if look_for == 0 {
                         found = true;
@@ -366,7 +383,7 @@ impl MinMax {
             Ok(position)
         } else {
             //todo konnte nicht gefunden werden!!
-            Ok(1)
+            Ok(10000000)
         }
     }
 
@@ -536,11 +553,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_bwd_search() {
         let bits =
             bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
         let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.bwd_search(7, 1).unwrap(), 4);
+        assert_eq!(min_max.bwd_search(5, -1).unwrap(), 0);
+        assert_eq!(min_max.bwd_search(10, 0).unwrap(), 6);
     }
 
     #[test]
