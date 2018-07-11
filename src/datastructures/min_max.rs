@@ -172,8 +172,8 @@ impl MinMax {
     }
 
     fn is_leaf(&self, index: usize) -> bool {
-        if index >= self.heap.len() /2 {
-            return true
+        if index >= self.heap.len() / 2 {
+            return true;
         }
         false
     }
@@ -452,22 +452,35 @@ impl MinMax {
     pub fn select_1(&self, rank: u64) -> Result<u64, NodeError> {
         let index = self.select_1_recursive(rank as i64, 0) as u64;
         if index >= self.bits_len {
-            return Err(NodeError::NotANodeError)
+            return Err(NodeError::NotANodeError);
         }
         Ok(index)
     }
 
-    // TODO: not working correctly
-    fn select_1_recursive(&self, bits_index: i64, heap_index: usize) -> i64 {
+    fn select_1_recursive(&self, rank: i64, heap_index: usize) -> i64 {
         if self.is_leaf(heap_index) {
-            return bits_index
-        } else if self.ones_for_node(self.left_child(heap_index)) >= bits_index {
-            return self.select_1_recursive(bits_index, self.left_child(heap_index))
+            // recursion termination: return index of kth "1" in block for k = rank
+            let block_no = (heap_index - self.heap.len() / 2) as i64;
+            let begin_of_block = block_no * self.block_size as i64;
+            let end_of_block = begin_of_block + self.block_size as i64;
+            let mut remaining_rank = rank;
+            let mut index = begin_of_block;
+            for k in begin_of_block..end_of_block {
+                if self.bits[k as u64] && remaining_rank > 0 {
+                    remaining_rank -= 1;
+                    index = k;
+                }
+            }
+            return index;
+        } else if self.ones_for_node(self.left_child(heap_index)) >= rank {
+            // case: the sought index belongs to left child: recursive call for lc with rank
+            return self.select_1_recursive(rank, self.left_child(heap_index));
         } else {
+            // case the sought index belongs to right child: recursive call
+            // for rc with rank - 1s belonging to left child
             self.select_1_recursive(
-                heap_index as i64 - self.ones_for_node(self.left_child(heap_index)),
-                self.bits_for_node(self.left_child(heap_index)) as usize
-                    + self.right_child(heap_index)
+                rank as i64 - self.ones_for_node(self.left_child(heap_index)),
+                self.right_child(heap_index),
             )
         }
     }
@@ -478,7 +491,7 @@ impl MinMax {
 
     /// Returns the number of 1s belonging to the heap node
     fn ones_for_node(&self, heap_index: usize) -> i64 {
-        ((self.bits_for_node(heap_index) as i64 + self.heap[heap_index].excess)/2)
+        ((self.bits_for_node(heap_index) as i64 + self.heap[heap_index].excess) / 2)
     }
 
     /// Returns the number of bits belonging to the heap node
@@ -698,15 +711,23 @@ mod tests {
         let bits = bit_vec![true, true, false, false];
         let min_max = MinMax::new(bits, 1);
         assert_eq!(min_max.ones_for_node(0), 2);
+        assert_eq!(min_max.ones_for_node(1), 2);
         assert_eq!(min_max.ones_for_node(6), 0);
     }
 
     #[test]
-    #[ignore]
     fn test_select_1() {
         let bits = bit_vec![true, true, false, false];
         let min_max = MinMax::new(bits, 1);
         assert_eq!(min_max.select_1(2).unwrap(), 1);
+        let bits = bit_vec![
+            true, true, true, false, true, false, true, true, false, false, false, true, false,
+            true, true, true, false, true, false, false, false, false
+        ];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.select_1(4).unwrap(), 4);
+        assert_eq!(min_max.select_1(10).unwrap(), 15);
+        assert_eq!(min_max.select_1(11).unwrap(), 17);
     }
 
 }
