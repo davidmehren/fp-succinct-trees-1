@@ -94,7 +94,7 @@ impl MinMax {
                     }
                 }
             }
-            if (bit_index + 1) % block_size == 0 {
+            if (bit_index + 1) % block_size == 0 || bit_index + 1 == bits_len {
                 //check if it is the end of a block
                 //save values as Node in a heap
                 heap[heap_index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
@@ -583,6 +583,31 @@ mod tests {
     }
 
     #[test]
+    fn test_min_max_construction2() {
+        let bits = bit_vec![
+            true, true, true, false, true, false, true, true, false, false, false, true, false,
+            true, true, true, false, true, false, false, false, false
+        ];
+        let min_max = MinMax::new(bits, 4);
+        assert_eq!(min_max.heap[0].excess, 0);
+        assert_eq!(min_max.heap[1].excess, 4);
+        assert_eq!(min_max.heap[2].excess, -4);
+        assert_eq!(min_max.heap[3].excess, 4);
+        assert_eq!(min_max.heap[4].excess, 0);
+        assert_eq!(min_max.heap[5].excess, -4);
+        assert_eq!(min_max.heap[6].excess, 0);
+        //
+        assert_eq!(min_max.heap[7].excess, 2);
+        assert_eq!(min_max.heap[8].excess, 2);
+        assert_eq!(min_max.heap[9].excess, -2);
+        assert_eq!(min_max.heap[10].excess, 2);
+        assert_eq!(min_max.heap[11].excess, -2);
+        assert_eq!(min_max.heap[12].excess, -2);
+        assert_eq!(min_max.heap[13].excess, 0);
+        assert_eq!(min_max.heap[14].excess, 0);
+    }
+
+    #[test]
     fn test_min_max() {
         let bits = bit_vec![
             true, true, true, false, true, false, true, true, false, false, false, true, false,
@@ -624,7 +649,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_bwd_search() {
         let bits =
             bit_vec![true, true, true, false, true, false, false, true, true, false, false, false];
