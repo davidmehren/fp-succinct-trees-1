@@ -516,6 +516,12 @@ mod tests {
             louds_tree.labeled_child(4, String::from("leaf")).unwrap(),
             7
         );
+        assert_eq!(
+            louds_tree
+                .labeled_child(4, String::from("foobar"))
+                .unwrap_err(),
+            NodeError::NoSuchChildError
+        );
     }
 
     #[test]
