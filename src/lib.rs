@@ -3,9 +3,10 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Succinct Tree library with implementations for the succinct trees LOUDS, BP
-//! and the Range Min Max data structure. LOUDS and BP use the Rank/Select data
-//! structure from the Rust-Bio crate. Code examples can be found in the submodules.
+//! Succinct Tree library with implementations for the succinct trees LOUDS and BP
+//! and the Range-Min-Max data structure used by BP. LOUDS and BP also use the 
+//! Rank/Select data structure from the Rust-Bio crate.
+//! Code examples can be found in the submodules.
 
 extern crate bio;
 #[macro_use]
