@@ -312,7 +312,7 @@ impl MinMax {
         Ok(position_in_block)
     }
 
-    fn bwd_search(&self, index: u64, diff: i64) -> Result<u64, NodeError> {
+    fn bwd_search(&self, index: u64, diff: i64) -> Result<i64, NodeError> {
         let mut block_no = index / self.block_size;
         let mut begin_of_block = block_no * self.block_size;
         let mut end_of_block = begin_of_block + self.block_size - 1;
@@ -419,10 +419,10 @@ impl MinMax {
             }
         }
         if found {
-            Ok(position)
+            Ok(position as i64)
         } else {
             //todo konnte nicht gefunden werden!!
-            Ok(10000000)
+            Ok(-1)
         }
     }
 
@@ -430,8 +430,8 @@ impl MinMax {
         self.fwd_search(index, 0)
     }
 
-    pub fn enclose(&self, index: u64) -> Result<u64, NodeError> {
-        self.bwd_search(index, 1)
+    pub fn enclose(&self, index: u64) -> Result<i64, NodeError> {
+        Ok(self.bwd_search(index, 2)? + 1)
     }
 
     pub fn rank_1(&self, index: u64) -> Result<u64, NodeError> {

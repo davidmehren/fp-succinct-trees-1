@@ -79,7 +79,7 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
         if index == 0 {
             Err(NodeError::HasNoParentError)
         } else {
-            Ok(self.minmax.enclose(index)?)
+            Ok(self.minmax.enclose(index)? as u64)
         }
     }
 
@@ -362,7 +362,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn parent() {
         let bitvec = bit_vec!(true, true, false, false);
         let tree: BPTree<String> = BPTree::from_bitvec(bitvec.clone()).unwrap();
