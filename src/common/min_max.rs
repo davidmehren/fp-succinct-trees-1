@@ -61,10 +61,13 @@ impl MinMax {
         let mut min_excess = 0;
         let mut number_min_excess: u64 = 0;
         let mut max_excess = 0;
+        let mut bits_for_block = 0;
+        let mut begin_of_block = 0;
 
         for bit_index in 0..bits_len {
+            //check if this is a new block:
             if number_min_excess == 0 {
-                //check if this is a new block
+                begin_of_block = bit_index;
                 if bits[bit_index] {
                     //initialize the values for the first bit of a block
                     excess = 1;
@@ -94,10 +97,17 @@ impl MinMax {
                     }
                 }
             }
+            //check if it is the end of a block:
             if (bit_index + 1) % block_size == 0 || bit_index + 1 == bits_len {
-                //check if it is the end of a block
                 //save values as Node in a heap
-                heap[heap_index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
+                bits_for_block = bit_index - begin_of_block + 1;
+                heap[heap_index].set_values(
+                    &excess,
+                    &min_excess,
+                    &number_min_excess,
+                    &max_excess,
+                    &bits_for_block,
+                );
                 heap_index += 1;
                 //set values beack to zero
                 excess = 0;
@@ -139,14 +149,29 @@ impl MinMax {
                         heap[left_child].excess + heap[right_child].max_excess,
                         heap[left_child].max_excess,
                     );
+                    bits_for_block =
+                        heap[left_child].bits_for_node + heap[right_child].bits_for_node;
                     //fill the node
-                    heap[index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
+                    heap[index].set_values(
+                        &excess,
+                        &min_excess,
+                        &number_min_excess,
+                        &max_excess,
+                        &bits_for_block,
+                    );
                 } else {
                     let excess = heap[left_child].excess;
                     let min_excess = heap[left_child].min_excess;
                     let number_min_excess = heap[left_child].number_min_excess;
                     let max_excess = heap[left_child].max_excess;
-                    heap[index].set_values(&excess, &min_excess, &number_min_excess, &max_excess);
+                    bits_for_block = heap[left_child].bits_for_node;
+                    heap[index].set_values(
+                        &excess,
+                        &min_excess,
+                        &number_min_excess,
+                        &max_excess,
+                        &bits_for_block,
+                    );
                 }
             }
         }
@@ -423,18 +448,14 @@ impl MinMax {
 
             // TODO: rewrite to use helper functions
             let mut current_node = ((self.heap.len() / 2) as u64 + block_no) as usize;
-            // multiplier * block_size: number of bits belonging to heap node
-            let mut multiplier = 1;
 
             while current_node > 0 {
                 let old_node = current_node;
                 current_node = self.parent(current_node);
                 if self.left_child(current_node) != old_node {
                     // (excess of node + number of bits for node)/2 = number of 1-bits for node
-                    rank += (self.heap[self.left_child(current_node)].excess
-                        + (multiplier * self.block_size) as i64) / 2;
+                    rank += self.ones_for_node(self.left_child(current_node));
                 }
-                multiplier *= 2;
             }
 
             Ok(rank as u64)
@@ -450,8 +471,6 @@ impl MinMax {
     }
 
     pub fn select_1(&self, rank: u64) -> Result<u64, NodeError> {
-        println!("bits: {}", self.bits_for_node(0));
-        println!("ones: {}", self.ones_for_node(0));
         if rank > (self.bits_len / 2) as u64 {
             // case: no "1" with given rank exists
             return Err(NodeError::NotANodeError);
@@ -467,10 +486,13 @@ impl MinMax {
             let end_of_block = begin_of_block + self.block_size as i64;
             let mut remaining_rank = rank;
             let mut index = begin_of_block;
-            for k in begin_of_block..end_of_block {
-                if self.bits[k as u64] && remaining_rank > 0 {
+            // for-loop ends at begin_of_block + bits_for_node because last block might be underfull
+            for bits_index in
+                begin_of_block..begin_of_block + self.heap[heap_index].bits_for_node as i64
+            {
+                if self.bits[bits_index as u64] && remaining_rank > 0 {
                     remaining_rank -= 1;
-                    index = k;
+                    index = bits_index;
                 }
             }
             return index;
@@ -503,22 +525,21 @@ impl MinMax {
             let end_of_block = begin_of_block + self.block_size as i64;
             let mut remaining_rank = rank;
             let mut index = begin_of_block;
-            for k in begin_of_block..end_of_block {
-                if !self.bits[k as u64] && remaining_rank > 0 {
+            // for-loop ends at begin_of_block + bits_for_node because last block might be underfull
+            for bits_index in
+                begin_of_block..begin_of_block + self.heap[heap_index].bits_for_node as i64
+            {
+                if !self.bits[bits_index as u64] && remaining_rank > 0 {
                     remaining_rank -= 1;
-                    index = k;
+                    index = bits_index;
                 }
             }
             return index;
         } else {
-            let no_of_zeroes = self.bits_for_node(self.left_child(heap_index))
+            let no_of_zeroes = self.heap[self.left_child(heap_index)].bits_for_node as i64
                 - self.ones_for_node(self.left_child(heap_index));
             if no_of_zeroes >= rank {
                 // case: the sought index belongs to left child: recursive call for lc with rank
-                println!(
-                    "case 1: zeroes >= rank, no_of_zeroes: {}, rank: {}",
-                    no_of_zeroes, rank
-                );
                 return self.select_0_recursive(rank, self.left_child(heap_index));
             } else {
                 // case: the sought index belongs to right child: recursive call
@@ -530,27 +551,7 @@ impl MinMax {
 
     /// Returns the number of 1s belonging to the heap node
     fn ones_for_node(&self, heap_index: usize) -> i64 {
-        println!(
-            "excess of node {}: {}",
-            heap_index, self.heap[heap_index].excess
-        );
-        ((self.bits_for_node(heap_index) as i64 + self.heap[heap_index].excess) / 2)
-    }
-
-    // TODO: returns incorrect values for underfull heaps
-    /// Returns the number of bits belonging to the heap node
-    fn bits_for_node(&self, heap_index: usize) -> i64 {
-        // multiplier for root level:
-        let mut multiplier = 2u64.pow(((self.heap.len()) as f64).log2() as u32);
-        let mut i = heap_index;
-        // compute correct multiplier for node with heap_index
-        while i > 0 {
-            // move up in heap while decreasing multiplier
-            i = self.parent(i);
-            multiplier /= 2;
-        }
-        // TODO: This is a dirty hack that corrects calculations for the root node:
-        return cmp::min((multiplier * self.block_size) as i64, self.bits_len as i64);
+        ((self.heap[heap_index].bits_for_node as i64 + self.heap[heap_index].excess) / 2)
     }
 }
 
@@ -560,6 +561,7 @@ pub struct MinMaxNode {
     min_excess: i64,
     number_min_excess: u64,
     max_excess: i64,
+    bits_for_node: u64,
 }
 
 impl MinMaxNode {
@@ -569,11 +571,13 @@ impl MinMaxNode {
         min_excess: &i64,
         number_min_excess: &u64,
         max_excess: &i64,
+        no_of_bits_for_node: &u64,
     ) {
         self.excess = *excess;
         self.min_excess = *min_excess;
         self.number_min_excess = *number_min_excess;
         self.max_excess = *max_excess;
+        self.bits_for_node = *no_of_bits_for_node;
     }
 }
 
@@ -769,13 +773,6 @@ mod tests {
     }
 
     #[test]
-    fn test_bits_for_node() {
-        let bits = bit_vec![true, true, false, false];
-        let min_max = MinMax::new(bits, 1);
-        assert_eq!(min_max.bits_for_node(0), 4);
-    }
-
-    #[test]
     fn test_ones_for_node() {
         let bits = bit_vec![true, true, false, false];
         let min_max = MinMax::new(bits, 1);
@@ -812,7 +809,7 @@ mod tests {
         let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.select_0(1).unwrap(), 3);
         assert_eq!(min_max.select_0(6).unwrap(), 12);
-        //assert_eq!(min_max.select_0(11).unwrap(), 21);
+        assert_eq!(min_max.select_0(11).unwrap(), 21);
         assert_eq!(min_max.select_0(12).unwrap_err(), NodeError::NotANodeError);
     }
 
