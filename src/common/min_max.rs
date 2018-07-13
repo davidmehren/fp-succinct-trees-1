@@ -204,6 +204,9 @@ impl MinMax {
     }
 
     pub fn excess(&self, index: u64) -> Result<u64, NodeError> {
+        if index >= self.bits.len() {
+            return Err(NodeError::NotANodeError);
+        }
         let block_number = (index / self.block_size);
         let position_in_block = index % self.block_size;
         let mut pre_excess: i64 = 0;
@@ -665,7 +668,6 @@ mod tests {
         let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.excess(21).unwrap(), 0);
         assert_eq!(min_max.excess(7).unwrap(), 4);
-        // TODO: Werden schon ungültige index-werte zurückgewiesen?
     }
 
     #[test]
@@ -674,6 +676,7 @@ mod tests {
         let min_max = MinMax::new(bits, 2);
         assert_eq!(min_max.excess(0).unwrap(), 1);
         assert_eq!(min_max.excess(1).unwrap(), 0);
+        assert_eq!(min_max.excess(2).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
