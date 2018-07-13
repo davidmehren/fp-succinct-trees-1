@@ -15,7 +15,7 @@
 //! # fn main() {
 //! use bv::BitVec;
 //! use bv::Bits;
-//! use fp_succinct_trees_1::datastructures::min_max::MinMax;
+//! use fp_succinct_trees_1::common::min_max::MinMax;
 //!
 //! let bits = bit_vec![true, false];
 //!        let min_max = MinMax::new(bits, 2);

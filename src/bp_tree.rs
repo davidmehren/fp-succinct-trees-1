@@ -17,7 +17,7 @@
 //! use bv::BitVec;
 //! use bv::Bits;
 //! use fp_succinct_trees_1::common::succinct_tree::SuccinctTree;
-//! use fp_succinct_trees_1::trees::bp_tree::BPTree;
+//! use fp_succinct_trees_1::bp_tree::BPTree;
 //!
 //! let bitvec = bit_vec!(true, true, false, false);
 //! let tree: BPTree<i32> = BPTree::from_bitvec(bitvec.clone()).unwrap();
@@ -32,8 +32,8 @@ use bv::Bits;
 use common::errors::EmptyTreeError;
 use common::errors::InvalidBitvecError;
 use common::errors::NodeError;
+use common::min_max::MinMax;
 use common::succinct_tree::SuccinctTree;
-use datastructures::min_max::MinMax;
 use failure::{Error, ResultExt};
 use id_tree::Node;
 use id_tree::NodeId;
