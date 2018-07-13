@@ -105,8 +105,11 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `NoSiblingError` If `index` has no further siblings.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         let parent_a = self.parent(index)?;
+        println!("parent: {}", parent_a);
         let sibling = self.minmax.find_close(index)? + 1;
+        println!("sibling: {}", sibling);
         let parent_b = self.parent(sibling)?;
+        println!("parent_b: {}", parent_b);
         if parent_a == parent_b {
             Ok(sibling)
         } else {
@@ -148,7 +151,7 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     fn child_label(&self, index: u64) -> Result<&L, NodeError> {
         self.is_valid_index(index)?;
         self.labels
-            .get(index as usize)
+            .get((self.pre_rank(index).unwrap() - 1) as usize)
             .ok_or(NodeError::NoLabelError)
     }
 
@@ -162,8 +165,12 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     fn labeled_child(&self, index: u64, label: L) -> Result<u64, NodeError> {
         self.is_valid_index(index)?;
         let first_child = self.first_child(index)?;
+        if *self.child_label(first_child)? == label {
+            return Ok(first_child);
+        }
+        let mut sibling = first_child;
         while self.next_sibling(first_child).err().is_none() {
-            let sibling: u64 = self.next_sibling(index)?;
+            sibling = self.next_sibling(sibling)?;
             if *self.child_label(sibling)? == label {
                 return Ok(sibling);
             }
@@ -515,15 +522,10 @@ mod tests {
         assert_eq!(*bp_tree.child_label(0).unwrap(), "root");
         assert_eq!(*bp_tree.child_label(1).unwrap(), "first_root_child");
         assert_eq!(*bp_tree.child_label(2).unwrap(), "leaf");
-        assert_eq!(*bp_tree.child_label(3).unwrap(), "second_root_child");
-        assert_eq!(
-            bp_tree.child_label(4).err().unwrap(),
-            NodeError::NoLabelError
-        );
+        assert_eq!(*bp_tree.child_label(5).unwrap(), "second_root_child");
     }
 
     #[test]
-    #[ignore]
     fn labeled_child() {
         let mut id_tree: Tree<String> = TreeBuilder::new().with_node_capacity(5).build();
         let root_id: NodeId = id_tree
@@ -557,6 +559,6 @@ mod tests {
                 .unwrap(),
             1
         );
-        assert_eq!(bp_tree.labeled_child(1, String::from("leaf")).unwrap(), 3);
+        assert_eq!(bp_tree.labeled_child(1, String::from("leaf")).unwrap(), 2);
     }
 }
