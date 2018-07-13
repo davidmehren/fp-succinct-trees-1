@@ -466,8 +466,7 @@ impl MinMax {
     }
 
     pub fn rank_0(&self, index: u64) -> Result<u64, NodeError> {
-        let result = (index - self.rank_1(index).unwrap()) as i64;
-        if result < 0 {
+        if index >= self.bits.len() {
             return Err(NodeError::NotANodeError);
         }
         Ok(index - self.rank_1(index).unwrap() + 1)
@@ -731,6 +730,7 @@ mod tests {
         let min_max = MinMax::new(bits, 4);
         assert_eq!(min_max.rank_1(11).unwrap(), 7);
         assert_eq!(min_max.rank_1(21).unwrap(), 11);
+        assert_eq!(min_max.rank_1(22).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
@@ -743,6 +743,7 @@ mod tests {
         assert_eq!(min_max.rank_0(12).unwrap(), 6);
         assert_eq!(min_max.rank_0(17).unwrap(), 7);
         assert_eq!(min_max.rank_0(21).unwrap(), 11);
+        assert_eq!(min_max.rank_0(22).unwrap_err(), NodeError::NotANodeError);
     }
 
     #[test]
