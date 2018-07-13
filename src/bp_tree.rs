@@ -398,14 +398,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn next_sibling_no_next_sibling() {
         let bitvec = bit_vec!(true, true, false, true, false, false);
         let tree: BPTree<String> = BPTree::from_bitvec(bitvec.clone()).unwrap();
-        assert_eq!(
-            tree.next_sibling(3).unwrap_err(),
-            NodeError::HasNoFurtherSiblingsError
-        );
+        assert_eq!(tree.next_sibling(3).unwrap_err(), NodeError::NoSiblingError);
     }
 
     #[test]
