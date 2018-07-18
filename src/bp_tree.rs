@@ -105,11 +105,8 @@ impl<L: PartialEq + Clone + Debug> SuccinctTree<BPTree<L>, L> for BPTree<L> {
     /// * `NoSiblingError` If `index` has no further siblings.
     fn next_sibling(&self, index: u64) -> Result<u64, NodeError> {
         let parent_a = self.parent(index)?;
-        println!("parent: {}", parent_a);
         let sibling = self.minmax.find_close(index)? + 1;
-        println!("sibling: {}", sibling);
         let parent_b = self.parent(sibling)?;
-        println!("parent_b: {}", parent_b);
         if parent_a == parent_b {
             Ok(sibling)
         } else {
